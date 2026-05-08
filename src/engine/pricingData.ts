@@ -1,0 +1,531 @@
+export type ToolId =
+  | 'cursor'
+  | 'github-copilot'
+  | 'claude'
+  | 'chatgpt'
+  | 'anthropic-api'
+  | 'openai-api'
+  | 'gemini'
+  | 'windsurf'
+
+export type ToolPlan = {
+  id: string
+  name: string
+  monthlyPrice: number
+  billingUnit: string
+  sourceUrl: string
+  description: string
+  priceLabel?: string
+}
+
+export type ToolPricing = {
+  id: ToolId
+  name: string
+  category: 'coding' | 'writing' | 'research' | 'platform'
+  sourceUrl: string
+  plans: ToolPlan[]
+  defaultPlanId: string
+}
+
+/**
+ * Pricing data sourced from PRICING_DATA.md (verified 2026-05-07)
+ * Single source of truth for all 8 AI tools and their plans
+ */
+export const pricingData: Record<ToolId, ToolPricing> = {
+  cursor: {
+    id: 'cursor',
+    name: 'Cursor',
+    category: 'coding',
+    sourceUrl: 'https://cursor.com/pricing',
+    defaultPlanId: 'pro',
+    plans: [
+      {
+        id: 'hobby',
+        name: 'Hobby',
+        monthlyPrice: 0,
+        billingUnit: 'per user',
+        sourceUrl: 'https://cursor.com/pricing',
+        description: 'Free forever for light individual usage.',
+      },
+      {
+        id: 'pro',
+        name: 'Pro',
+        monthlyPrice: 20,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://cursor.com/pricing',
+        description: 'Individual plan for active developers.',
+        priceLabel: '$20/mo',
+      },
+      {
+        id: 'pro-plus',
+        name: 'Pro+',
+        monthlyPrice: 60,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://cursor.com/pricing',
+        description: 'Higher usage tier for power users.',
+        priceLabel: '$60/mo',
+      },
+      {
+        id: 'ultra',
+        name: 'Ultra',
+        monthlyPrice: 200,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://cursor.com/pricing',
+        description: 'Maximum usage tier for heavy power users.',
+        priceLabel: '$200/mo',
+      },
+      {
+        id: 'teams',
+        name: 'Teams',
+        monthlyPrice: 40,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://cursor.com/pricing',
+        description: 'Team plan with org controls and admin features.',
+        priceLabel: '$40/user/mo',
+      },
+      {
+        id: 'enterprise',
+        name: 'Enterprise',
+        monthlyPrice: 0,
+        billingUnit: 'custom',
+        sourceUrl: 'https://cursor.com/pricing',
+        description: 'Contact sales for enterprise pricing.',
+        priceLabel: 'Custom',
+      },
+    ],
+  },
+  'github-copilot': {
+    id: 'github-copilot',
+    name: 'GitHub Copilot',
+    category: 'coding',
+    sourceUrl: 'https://github.com/features/copilot/plans',
+    defaultPlanId: 'pro',
+    plans: [
+      {
+        id: 'free',
+        name: 'Free',
+        monthlyPrice: 0,
+        billingUnit: 'individual',
+        sourceUrl: 'https://github.com/features/copilot/plans',
+        description: 'Free tier with limited usage.',
+      },
+      {
+        id: 'pro',
+        name: 'Pro',
+        monthlyPrice: 10,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://github.com/features/copilot/plans',
+        description: 'Individual plan for personal coding assistance.',
+        priceLabel: '$10/mo',
+      },
+      {
+        id: 'pro-plus',
+        name: 'Pro+',
+        monthlyPrice: 39,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://github.com/features/copilot/plans',
+        description: 'Higher-capacity individual plan.',
+        priceLabel: '$39/mo',
+      },
+      {
+        id: 'business',
+        name: 'Business',
+        monthlyPrice: 19,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://github.com/features/copilot/plans',
+        description: 'Organization controls and policy management.',
+        priceLabel: '$19/mo',
+      },
+      {
+        id: 'enterprise',
+        name: 'Enterprise',
+        monthlyPrice: 39,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://github.com/features/copilot/plans',
+        description: 'Advanced enterprise governance and compliance.',
+        priceLabel: '$39/mo',
+      },
+    ],
+  },
+  claude: {
+    id: 'claude',
+    name: 'Claude',
+    category: 'writing',
+    sourceUrl: 'https://claude.com/pricing',
+    defaultPlanId: 'pro',
+    plans: [
+      {
+        id: 'free',
+        name: 'Free',
+        monthlyPrice: 0,
+        billingUnit: 'individual',
+        sourceUrl: 'https://claude.com/pricing',
+        description: 'Free tier with tighter usage limits.',
+      },
+      {
+        id: 'pro',
+        name: 'Pro',
+        monthlyPrice: 20,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://claude.com/pricing',
+        description: 'Best fit for power users and individual contributors.',
+        priceLabel: '$20/mo',
+      },
+      {
+        id: 'max-5x',
+        name: 'Max 5×',
+        monthlyPrice: 100,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://claude.com/pricing',
+        description: 'Higher usage tier for heavy power users.',
+        priceLabel: '$100/mo',
+      },
+      {
+        id: 'max-20x',
+        name: 'Max 20×',
+        monthlyPrice: 200,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://claude.com/pricing',
+        description: 'Highest usage tier for the heaviest Claude users.',
+        priceLabel: '$200/mo',
+      },
+      {
+        id: 'team-standard',
+        name: 'Team Standard',
+        monthlyPrice: 30,
+        billingUnit: 'per seat/month',
+        sourceUrl: 'https://claude.com/pricing',
+        description: 'Shared workspace and team collaboration features.',
+        priceLabel: '$30/seat/mo',
+      },
+      {
+        id: 'team-premium',
+        name: 'Team Premium',
+        monthlyPrice: 125,
+        billingUnit: 'per seat/month',
+        sourceUrl: 'https://claude.com/pricing',
+        description: 'Premium team tier with expanded usage.',
+        priceLabel: '$125/seat/mo',
+      },
+      {
+        id: 'enterprise',
+        name: 'Enterprise',
+        monthlyPrice: 0,
+        billingUnit: 'custom',
+        sourceUrl: 'https://claude.com/pricing',
+        description: 'Contact sales for enterprise pricing.',
+        priceLabel: 'Custom',
+      },
+    ],
+  },
+  chatgpt: {
+    id: 'chatgpt',
+    name: 'ChatGPT',
+    category: 'writing',
+    sourceUrl: 'https://openai.com/pricing',
+    defaultPlanId: 'plus',
+    plans: [
+      {
+        id: 'free',
+        name: 'Free',
+        monthlyPrice: 0,
+        billingUnit: 'individual',
+        sourceUrl: 'https://openai.com/pricing',
+        description: 'Free tier with light usage and basic access.',
+      },
+      {
+        id: 'go',
+        name: 'Go',
+        monthlyPrice: 4.8,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://openai.com/pricing',
+        description: 'Low-cost entry tier with ads.',
+        priceLabel: '$4.80/mo',
+      },
+      {
+        id: 'plus',
+        name: 'Plus',
+        monthlyPrice: 24,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://openai.com/pricing',
+        description: 'Popular plan for individual power users.',
+        priceLabel: '$24/mo',
+      },
+      {
+        id: 'pro',
+        name: 'Pro',
+        monthlyPrice: 128.9,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://openai.com/pricing',
+        description: 'High-usage personal tier for heavy users.',
+        priceLabel: '$128.90/mo',
+      },
+      {
+        id: 'business-codex',
+        name: 'Business Codex',
+        monthlyPrice: 0,
+        billingUnit: 'usage-based',
+        sourceUrl: 'https://openai.com/pricing',
+        description: 'Usage-based business coding plan.',
+        priceLabel: 'Usage-based',
+      },
+      {
+        id: 'business-annual',
+        name: 'Business (Annual)',
+        monthlyPrice: 21.6,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://openai.com/pricing',
+        description: 'Annual billing business tier (minimum 2 users).',
+        priceLabel: '$21.60/mo billed annually',
+      },
+      {
+        id: 'business-monthly',
+        name: 'Business (Monthly)',
+        monthlyPrice: 27.1,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://openai.com/pricing',
+        description: 'Monthly billing business tier.',
+        priceLabel: '$27.10/mo',
+      },
+      {
+        id: 'enterprise',
+        name: 'Enterprise',
+        monthlyPrice: 0,
+        billingUnit: 'custom',
+        sourceUrl: 'https://openai.com/pricing',
+        description: 'Custom enterprise contract pricing.',
+        priceLabel: 'Custom',
+      },
+    ],
+  },
+  'anthropic-api': {
+    id: 'anthropic-api',
+    name: 'Anthropic API',
+    category: 'platform',
+    sourceUrl: 'https://www.anthropic.com/pricing',
+    defaultPlanId: 'sonnet-4-6',
+    plans: [
+      {
+        id: 'opus-4-6',
+        name: 'Claude Opus 4.6',
+        monthlyPrice: 0,
+        billingUnit: 'per MTok',
+        sourceUrl: 'https://www.anthropic.com/pricing',
+        description: 'Pay-as-you-go: Input $15 / MTok, output $75 / MTok.',
+        priceLabel: '$15 input / $75 output per MTok',
+      },
+      {
+        id: 'sonnet-4-6',
+        name: 'Claude Sonnet 4.6',
+        monthlyPrice: 0,
+        billingUnit: 'per MTok',
+        sourceUrl: 'https://www.anthropic.com/pricing',
+        description: 'Pay-as-you-go: Input $3 / MTok, output $15 / MTok.',
+        priceLabel: '$3 input / $15 output per MTok',
+      },
+      {
+        id: 'haiku-4-5',
+        name: 'Claude Haiku 4.5',
+        monthlyPrice: 0,
+        billingUnit: 'per MTok',
+        sourceUrl: 'https://www.anthropic.com/pricing',
+        description: 'Pay-as-you-go: Input $0.80 / MTok, output $4 / MTok.',
+        priceLabel: '$0.80 input / $4 output per MTok',
+      },
+      {
+        id: 'batch-api',
+        name: 'Batch API',
+        monthlyPrice: 0,
+        billingUnit: 'discounted usage',
+        sourceUrl: 'https://www.anthropic.com/pricing',
+        description: '50% off standard pricing for async workloads.',
+        priceLabel: '50% off standard',
+      },
+      {
+        id: 'prompt-cache',
+        name: 'Prompt Cache Read',
+        monthlyPrice: 0,
+        billingUnit: 'per MTok',
+        sourceUrl: 'https://www.anthropic.com/pricing',
+        description: 'Prompt cache reads reduce repeated-context costs.',
+        priceLabel: '~$0.30 / MTok',
+      },
+    ],
+  },
+  'openai-api': {
+    id: 'openai-api',
+    name: 'OpenAI API',
+    category: 'platform',
+    sourceUrl: 'https://openai.com/api/pricing',
+    defaultPlanId: 'gpt-5-4',
+    plans: [
+      {
+        id: 'gpt-5-5',
+        name: 'GPT-5.5',
+        monthlyPrice: 0,
+        billingUnit: 'per MTok',
+        sourceUrl: 'https://openai.com/api/pricing',
+        description: 'Pay-as-you-go: Input $5 / MTok, cached $0.50 / MTok, output $30 / MTok.',
+        priceLabel: '$5 input / $30 output per MTok',
+      },
+      {
+        id: 'gpt-5-4',
+        name: 'GPT-5.4',
+        monthlyPrice: 0,
+        billingUnit: 'per MTok',
+        sourceUrl: 'https://openai.com/api/pricing',
+        description: 'Pay-as-you-go: Input $2.50 / MTok, cached $0.25 / MTok, output $15 / MTok.',
+        priceLabel: '$2.50 input / $15 output per MTok',
+      },
+      {
+        id: 'gpt-5-4-mini',
+        name: 'GPT-5.4 mini',
+        monthlyPrice: 0,
+        billingUnit: 'per MTok',
+        sourceUrl: 'https://openai.com/api/pricing',
+        description: 'Pay-as-you-go: Input $0.75 / MTok, cached $0.075 / MTok, output $4.50 / MTok.',
+        priceLabel: '$0.75 input / $4.50 output per MTok',
+      },
+      {
+        id: 'batch-api',
+        name: 'Batch API',
+        monthlyPrice: 0,
+        billingUnit: 'discounted usage',
+        sourceUrl: 'https://openai.com/api/pricing',
+        description: '50% off standard pricing for batch workloads.',
+        priceLabel: '50% off standard',
+      },
+    ],
+  },
+  gemini: {
+    id: 'gemini',
+    name: 'Gemini',
+    category: 'research',
+    sourceUrl: 'https://gemini.google/subscriptions',
+    defaultPlanId: 'plus',
+    plans: [
+      {
+        id: 'free',
+        name: 'Free',
+        monthlyPrice: 0,
+        billingUnit: 'individual',
+        sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+        description: 'Entry tier for lighter individual use.',
+      },
+      {
+        id: 'plus',
+        name: 'Google AI Plus',
+        monthlyPrice: 4.8,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://gemini.google/subscriptions',
+        description: 'Lower-cost subscription tier.',
+        priceLabel: '$4.80/mo',
+      },
+      {
+        id: 'pro',
+        name: 'Google AI Pro',
+        monthlyPrice: 23.3,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://gemini.google/subscriptions',
+        description: 'Premium subscription tier.',
+        priceLabel: '$23.30/mo',
+      },
+      {
+        id: 'ultra',
+        name: 'Google AI Ultra',
+        monthlyPrice: 293,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://gemini.google/subscriptions',
+        description: 'Highest-tier subscription plan.',
+        priceLabel: '$293/mo',
+      },
+      {
+        id: 'flash-lite',
+        name: 'Gemini 3.1 Flash-Lite',
+        monthlyPrice: 0,
+        billingUnit: 'per MTok',
+        sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+        description: 'Pay-as-you-go: Input $0.25 / MTok, output $1.50 / MTok.',
+        priceLabel: '$0.25 input / $1.50 output per MTok',
+      },
+      {
+        id: 'pro-api',
+        name: 'Gemini 2.5 Pro',
+        monthlyPrice: 0,
+        billingUnit: 'per MTok',
+        sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+        description: 'Pay-as-you-go: Input $1.25–$2.50 / MTok, output $10–$15 / MTok.',
+        priceLabel: '$1.25+ input / $10+ output per MTok',
+      },
+      {
+        id: 'flash',
+        name: 'Gemini 2.5 Flash',
+        monthlyPrice: 0,
+        billingUnit: 'per MTok',
+        sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+        description: 'Pay-as-you-go: Input $0.30 / MTok, output $2.50 / MTok.',
+        priceLabel: '$0.30 input / $2.50 output per MTok',
+      },
+    ],
+  },
+  windsurf: {
+    id: 'windsurf',
+    name: 'Windsurf',
+    category: 'coding',
+    sourceUrl: 'https://windsurf.com/pricing',
+    defaultPlanId: 'pro',
+    plans: [
+      {
+        id: 'free',
+        name: 'Free',
+        monthlyPrice: 0,
+        billingUnit: 'individual',
+        sourceUrl: 'https://windsurf.com/pricing',
+        description: 'Starter plan for light use.',
+      },
+      {
+        id: 'pro',
+        name: 'Pro',
+        monthlyPrice: 20,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://windsurf.com/pricing',
+        description: 'Individual plan for regular coding use.',
+        priceLabel: '$20/mo',
+      },
+      {
+        id: 'max',
+        name: 'Max',
+        monthlyPrice: 200,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://windsurf.com/pricing',
+        description: 'Unlimited credits plan for heavy use.',
+        priceLabel: '$200/mo',
+      },
+      {
+        id: 'teams',
+        name: 'Teams',
+        monthlyPrice: 40,
+        billingUnit: 'per user/month',
+        sourceUrl: 'https://windsurf.com/pricing',
+        description: 'Team collaboration and admin features.',
+        priceLabel: '$40/mo',
+      },
+      {
+        id: 'enterprise',
+        name: 'Enterprise',
+        monthlyPrice: 0,
+        billingUnit: 'custom',
+        sourceUrl: 'https://windsurf.com/pricing',
+        description: 'Contact sales for enterprise pricing.',
+        priceLabel: 'Contact sales',
+      },
+    ],
+  },
+}
+
+export const toolOrder: ToolId[] = ['cursor', 'github-copilot', 'claude', 'chatgpt', 'anthropic-api', 'openai-api', 'gemini', 'windsurf']
+
+export const toolOptions = toolOrder.map((toolId) => pricingData[toolId])
+
+export type ToolOption = (typeof toolOptions)[number]
+export type ToolPlanOption = ToolOption['plans'][number]
