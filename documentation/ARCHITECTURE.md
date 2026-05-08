@@ -109,4 +109,35 @@ flowchart TD
  
 ---
 
+## 3. Stack
+ 
+| Component      | Technology Used                         |
+|----------------|------------------------------------------|
+| Framework      | React + Vite                            |
+| Language       | TypeScript                              |
+| Audit Engine   | Hardcoded TypeScript Rule-Based Logic   |
+| Database       | Supabase (PostgreSQL)                   |
+| Email Service  | Resend                                  |
 
+
+## 4. Stack — Decisions & Justification
+ 
+### Frontend: React 18 + Vite + TypeScript
+ 
+**Why React:**
+ Vite is faster to set up and easier to reason about in a 7-day sprint. I'm also most productive in React + TypeScript — in a time-constrained build, working in familiar tools means fewer mistakes and faster iteration.
+ 
+**Why TypeScript everywhere:**
+The audit engine is the core of this product. A type error in pricing data or savings calculations means wrong numbers shown to real users. TypeScript catches that at compile time. Every pricing constant, recommendation rule, and Supabase response is typed the code is safer and more readable for anyone reviewing it.
+ 
+**Why Tailwind + shadcn/ui:**
+shadcn/ui is ARIA-compliant out of the box, which is the fastest path to Accessibility ≥ 90 without manual ARIA work. Tailwind has zero runtime cost and full purging in production — essential for Performance ≥ 85.
+ 
+### Backend: Supabase
+ 
+Postgres gives a clean relational schema for audits ↔ leads. Row Level Security lets the share page read audits publicly while keeping lead emails private — no custom API layer needed. Free tier is sufficient for MVP.
+ 
+### Email: Resend
+ 
+Three-line API. 100 emails/day free tier covers MVP. No domain verification friction during development.
+ 
