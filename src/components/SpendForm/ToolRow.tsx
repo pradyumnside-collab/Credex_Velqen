@@ -59,7 +59,7 @@ export function ToolRow({ value, onChange, onRemove, canRemove, disabledToolIds 
         </div>
 
         <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
-          <div className="grid gap-4 xl:grid-cols-[1.15fr_1fr_0.8fr_0.8fr]">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-[1.2fr_1fr_0.8fr_0.8fr]">
             <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <Label htmlFor={`tool-${value.toolId}`} className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                 Tool

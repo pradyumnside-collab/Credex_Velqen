@@ -1,91 +1,158 @@
-import { ArrowRight, BadgeCheck, LayoutGrid, TrendingDown } from 'lucide-react'
+import { ArrowRight, BadgeCheck, LayoutGrid, TrendingDown, Sparkles } from 'lucide-react'
 
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { SpendForm } from '@/components/SpendForm/SpendForm'
 
-const highlights = [
+const features = [
   {
     icon: TrendingDown,
-    title: 'See waste fast',
-    description: 'Spot duplicate plans, overpriced seats, and tools that can be downgraded.',
+    title: 'Reveal hidden waste',
+    description: 'Duplicate subscriptions, unused seats, and API costs consolidated into a clear savings plan.',
   },
   {
     icon: BadgeCheck,
-    title: 'No login required',
-    description: 'Value shows first so managers can evaluate the audit before sharing an email.',
+    title: 'Finance defensible',
+    description: 'Actionable recommendations and conservative savings estimates ready for finance review.',
   },
   {
     icon: LayoutGrid,
-    title: 'Built for tool stacks',
-    description: 'Track Cursor, Copilot, Claude, ChatGPT, APIs, Gemini, and Windsurf in one place.',
+    title: 'Stack aware',
+    description: 'Supports ChatGPT, Claude, Cursor, Gemini, Copilot and direct API spend in one audit.',
   },
 ]
 
 export function Home() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.18),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(15,23,42,0.08),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)] text-slate-950">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-[-8rem] top-28 h-72 w-72 rounded-full bg-emerald-300/20 blur-3xl" />
-        <div className="absolute right-[-5rem] top-44 h-64 w-64 rounded-full bg-cyan-300/20 blur-3xl" />
-      </div>
-
-      <section className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-12 px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-        <div className="grid flex-1 items-start gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8">
-          <div className="flex flex-col justify-center space-y-8 pt-4 lg:pt-12">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm backdrop-blur">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Velqen audit draft for engineering managers
+    <main className="min-h-screen bg-slate-950 text-slate-100 antialiased">
+      <div className="mx-auto max-w-7xl px-6 py-16 lg:py-24">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-start">
+          {/* Hero */}
+          <header className="lg:col-span-7">
+            <div className="mb-6 inline-flex items-center gap-3 rounded-full bg-slate-900/40 px-4 py-1 text-xs font-medium tracking-wider text-emerald-300">
+              <Sparkles className="h-4 w-4 text-emerald-300" />
+              Velqen — AI spend audit (private preview)
             </div>
 
-            <div className="space-y-5">
-              <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-                Find out if your AI tools are costing you more than they should.
-              </h1>
-              <p className="max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
-                Add your stack, keep the draft saved locally, and prepare a finance-defensible audit that shows where the spend can come down.
-              </p>
+            <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+              The operating system for AI spend — precise, private, inevitable.
+            </h1>
+
+            <p className="mt-6 max-w-2xl text-lg text-slate-300">
+              Instantly audit your AI tool stack to reveal conservative, finance-defensible savings across subscriptions, seats, and API usage. Clarity first — recommendations next.
+            </p>
+
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <a href="#audit-form" className="inline-flex items-center gap-3 rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-slate-900 shadow-md transition-transform hover:-translate-y-0.5">
+                Run a quick audit
+                <ArrowRight className="h-4 w-4" />
+              </a>
+
+              <Button variant="ghost" className="rounded-full border border-slate-800 px-4 py-2 text-sm text-slate-300">
+                Request demo
+              </Button>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              {highlights.map((highlight) => {
-                const Icon = highlight.icon
-
+            <div className="mt-10 grid gap-4 sm:grid-cols-3">
+              {features.map((f) => {
+                const Icon = f.icon
                 return (
-                  <Card key={highlight.title} className="border-white/80 bg-white/70 shadow-[0_12px_45px_rgba(15,23,42,0.08)] backdrop-blur">
-                    <CardContent className="space-y-3 p-5">
-                      <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-white">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h2 className="text-base font-semibold text-slate-950">{highlight.title}</h2>
-                        <p className="mt-1 text-sm leading-6 text-slate-600">{highlight.description}</p>
+                  <Card key={f.title} className="bg-transparent border border-slate-800/50">
+                    <CardContent className="p-5">
+                      <div className="flex items-start gap-4">
+                        <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-emerald-400">
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-white">{f.title}</h3>
+                          <p className="mt-1 text-sm text-slate-400">{f.description}</p>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 )
               })}
             </div>
+          </header>
 
-            <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-              <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1">Instant local persistence</span>
-              <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1">Tailored for 3+ tool teams</span>
-              <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1">Professional audit workflow</span>
+          {/* Right column: Savings preview + audit form compact */}
+          <aside className="lg:col-span-5">
+            <div className="sticky top-24 space-y-6">
+              <div className="rounded-2xl bg-gradient-to-br from-slate-900/60 to-slate-800/40 p-6 shadow-lg">
+                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-300">Instant preview</h4>
+                <h2 className="mt-3 text-3xl font-bold text-white">Potential savings</h2>
+                <p className="mt-2 text-sm text-slate-400">Based on common stack patterns — conservative estimates.</p>
+
+                <div className="mt-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-slate-300">Monthly run rate</div>
+                    <div className="text-lg font-semibold text-white">$42,300</div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-slate-300">Estimated recoverable</div>
+                    <div className="text-lg font-semibold text-emerald-400">$9,620</div>
+                  </div>
+
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700">
+                    <div className="h-2 bg-emerald-400" style={{ width: '22%' }} />
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-3">
+                    <a href="#audit-form" className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900">
+                      Start your audit
+                    </a>
+                    <a href="#features" className="text-sm text-slate-400 hover:underline">How it works</a>
+                  </div>
+                </div>
+              </div>
             </div>
-
-            <a
-              href="#audit-form"
-              className="inline-flex w-fit items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-950/15 transition-transform hover:-translate-y-0.5 hover:bg-slate-800"
-            >
-              Start your audit
-              <ArrowRight className="h-4 w-4" />
-            </a>
-          </div>
-
-          <div id="audit-form" className="scroll-mt-6 lg:pt-4">
-            <SpendForm />
-          </div>
+          </aside>
         </div>
-      </section>
+
+        {/* Full-width audit form */}
+        <section id="audit-form" className="mt-16 sm:mt-24">
+          <div className="rounded-2xl bg-slate-900/40 p-6 sm:p-10 w-full shadow-xl ring-1 ring-slate-800/50">
+            <CardHeader className="p-0 pb-6">
+              <CardTitle className="text-xl sm:text-2xl font-semibold text-white">Run a detailed audit</CardTitle>
+              <p className="mt-2 text-sm sm:text-base text-slate-400">Add tools, seats, and API usage — your draft saves locally as you work.</p>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              <div className="w-full">
+                <SpendForm className="w-full bg-transparent border-0 shadow-none" />
+              </div>
+            </CardContent>
+          </div>
+        </section>
+
+        {/* Deepen the story: Why Velqen */}
+        <section id="features" className="mt-20 grid gap-12 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <h3 className="text-2xl font-semibold text-white">Why Velqen?</h3>
+            <p className="mt-4 text-lg text-slate-300">Velqen is designed for teams that treat AI like infrastructure — measurable, governed, and optimized. We combine subscription intelligence with conservative API spend modelling so you can reduce monthly run rates without risking productivity.</p>
+
+            <div className="mt-8 grid gap-6 sm:grid-cols-2">
+              <div className="rounded-xl border border-slate-800/60 bg-slate-900/20 p-5">
+                <h4 className="text-sm font-semibold text-white">Audit-first workflow</h4>
+                <p className="mt-2 text-sm text-slate-400">No account access required for a first-pass audit — save locally and share a PDF-ready summary with finance.</p>
+              </div>
+
+              <div className="rounded-xl border border-slate-800/60 bg-slate-900/20 p-5">
+                <h4 className="text-sm font-semibold text-white">Conservative estimates</h4>
+                <p className="mt-2 text-sm text-slate-400">All savings are presented conservatively so recommendations are defensible during vendor discussions.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden lg:block">
+            <div className="rounded-xl border border-slate-800/60 bg-slate-900/20 p-6">
+              <h5 className="text-sm font-semibold text-emerald-300">Trusted by teams</h5>
+              <p className="mt-3 text-sm text-slate-400">Engineering and finance teams use Velqen to convert tool chaos into a plan.</p>
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
   )
 }
