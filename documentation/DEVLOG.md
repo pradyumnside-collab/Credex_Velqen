@@ -8,3 +8,10 @@
 **What I learned:** Learn about what all kinds of documentation are important for building a full end to end application.
 **Blockers / what I'm stuck on:** Cross checking all the tech-stack i have decided to use.
 **Plan for tomorrow:** Tomorrow I am going to complete more doc files, add GitHub workflows, initiate the input form, and try to complete it.
+
+## Day 3 — 2026-05-08
+**Hours worked:** 3
+**What I did:**  Form persistence decisions, frontend design and also setup the github workflow. I also started `ARCHITECTURE.md`.
+**What I learned:** I revised to implement local storage, resolve UI layout bugs using responsive grids, and configure GitHub workflows.
+**Blockers / what I'm stuck on:** I am currently stuck on math for calculations of saving and building core logic of audit 
+**Plan for tomorrow:** I will focus tommorow on Core audit logic and fully tested it too.
