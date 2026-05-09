@@ -15,3 +15,10 @@
 **What I learned:** I revised to implement local storage, resolve UI layout bugs using responsive grids, and configure GitHub workflows.
 **Blockers / what I'm stuck on:** I am currently stuck on math for calculations of saving and building core logic of audit 
 **Plan for tomorrow:** I will focus tommorow on Core audit logic and fully tested it too.
+
+## Day 4 — 2026-05-09
+**Hours worked:** 4
+**What I did:** Built the pure audit engine, added savings logic and recommendation rules.
+**What I learned:** When we are building an application that serves a wide variety of customers then we need to handle many different real world use cases and user requirements.
+**Blockers / what I'm stuck on:** I am still not convince with the logic and reccomendation rules which I am currently using. I still belive there are many more variables which need to be considered while producing the audit.
+**Plan for tomorrow:** Make the recomendation rule more optimized based on real world use case.
