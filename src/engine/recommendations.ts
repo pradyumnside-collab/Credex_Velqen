@@ -1,4 +1,4 @@
-import { calcAnnualSavings, calcMonthlySavings } from './savingsCalc'
+import { calcAnnualSavings, calcMonthlySavings, calcSeatOverprovisionSavings, round2 } from './savingsCalc'
 import {
   pricingData,
   getPlan,
@@ -9,7 +9,16 @@ import {
   type UseCase,
 } from './pricingData'
 
-export type RecommendationAction = 'billing-switch' | 'org-feature-tax' | 'plan-downgrade' | 'usage-check' | 'model-rightsizing' | 'optimal'
+export type RecommendationAction =
+  | 'billing-switch'
+  | 'org-feature-tax'
+  | 'plan-downgrade'
+  | 'usage-check'
+  | 'model-rightsizing'
+  | 'seat-overprovision'
+  | 'wrong-use-case'
+  | 'spend-discrepancy'
+  | 'optimal'
 
 export type AuditToolInput = {
   toolId: ToolId
@@ -17,6 +26,7 @@ export type AuditToolInput = {
   seats: number
   reportedMonthlySpend: number
   currentSpend: number
+  resolvedSpend: number
   usageRatio: number
 }
 
@@ -32,6 +42,8 @@ export type ToolRecommendation = {
   currentPlanId: string
   currentPlanName: string
   currentSpend: number
+  recommendedToolId: ToolId
+  recommendedToolName: string
   recommendedPlanId: string
   recommendedPlanName: string
   recommendedSpend: number
@@ -44,6 +56,12 @@ export type ToolRecommendation = {
   capabilityImpact: 'none' | 'same' | 'tradeoff' | 'usage-dependent'
   isOptimal: boolean
   flags: string[]
+  spendDiscrepancy: {
+    reported: number
+    computed: number
+    difference: number
+    flag: boolean
+  } | null
 }
 
 const capabilityFloorByUseCase: Record<UseCase, 1 | 2 | 3 | 4 | 5> = {
@@ -70,50 +88,85 @@ const currentPlan = (toolId: ToolId, planId: string): ToolPlan => {
   return fallback
 }
 
-const billablePlanSpend = (plan: ToolPlan, seats: number, reportedSpend: number) => {
-  if (plan.billingUnit === 'custom') {
-    return reportedSpend
-  }
-
-  if (plan.billingUnit.includes('per MTok') || plan.usageTier === 'usage-based') {
-    return reportedSpend
-  }
-
-  const billableSeats = Math.max(seats, plan.minSeats ?? 1)
-  const floorSpend = plan.monthlyMinimum ?? plan.monthlyPrice * billableSeats
-
-  return Math.max(reportedSpend, floorSpend)
-}
-
 const requiredCapability = (useCase: UseCase) => capabilityFloorByUseCase[useCase]
 
-const sameCapabilityCandidate = (toolId: ToolId, current: ToolPlan, useCase: UseCase) => {
+function currentPlanComputedSpend(input: AuditToolInput, plan: ToolPlan) {
+  if (plan.billingUnit === 'custom' || plan.usageTier === 'usage-based' || plan.billingUnit.includes('per MTok')) {
+    return input.currentSpend
+  }
+
+  const effectiveSeats = Math.max(input.seats, plan.minSeats ?? 1)
+  const computedSpend = plan.monthlyPrice * effectiveSeats
+  const floor = Math.max(computedSpend, plan.monthlyMinimum ?? 0)
+  return round2(floor)
+}
+
+function buildSpendDiscrepancy(
+  input: AuditToolInput,
+  computedSpend: number,
+): ToolRecommendation['spendDiscrepancy'] {
+  const difference = round2(Math.abs(input.reportedMonthlySpend - computedSpend))
+  const percentDiff = computedSpend > 0 ? difference / computedSpend : 0
+
+  return {
+    reported: round2(input.reportedMonthlySpend),
+    computed: round2(computedSpend),
+    difference,
+    flag: percentDiff > 0.2,
+  }
+}
+
+const effectiveCandidateCost = (current: ToolPlan, candidate: ToolPlan, input: AuditToolInput) => {
+  if (candidate.billingUnit === 'custom') {
+    return Number.MAX_SAFE_INTEGER
+  }
+
+  if (candidate.usageTier === 'usage-based' || candidate.billingUnit.includes('per MTok')) {
+    return usageBasedCandidateSpend(current, candidate, input.currentSpend)
+  }
+
+  return candidate.monthlyMinimum ?? candidate.monthlyPrice * Math.max(input.seats, candidate.minSeats ?? 1)
+}
+
+const sameCapabilityCandidate = (input: AuditToolInput, useCase: UseCase) => {
+  const current = currentPlan(input.toolId, input.planId)
+  const toolId = input.toolId
   const candidates = getPlans(toolId).filter((plan) => {
     if (plan.id === current.id) {
       return false
     }
 
-    return plan.monthlyPrice > 0 || plan.billingUnit !== 'custom'
+    return plan.billingUnit !== 'custom'
   })
 
   return candidates
-    .filter((plan) => plan.capabilityScore === current.capabilityScore && plan.bestFor.includes(useCase) && plan.monthlyPrice < current.monthlyPrice)
-    .sort((left, right) => left.monthlyPrice - right.monthlyPrice)[0] ?? null
+    .map((plan) => ({
+      plan,
+      effectiveCost: effectiveCandidateCost(current, plan, input),
+    }))
+    .filter(({ plan, effectiveCost }) => plan.capabilityScore === current.capabilityScore && plan.bestFor.includes(useCase) && effectiveCost < input.currentSpend)
+    .sort((left, right) => left.effectiveCost - right.effectiveCost)[0]?.plan ?? null
 }
 
-const acceptableCheaperCandidate = (toolId: ToolId, current: ToolPlan, useCase: UseCase) => {
+const acceptableCheaperCandidate = (input: AuditToolInput, useCase: UseCase) => {
+  const current = currentPlan(input.toolId, input.planId)
+  const toolId = input.toolId
   const floor = requiredCapability(useCase)
   const candidates = getPlans(toolId).filter((plan) => {
     if (plan.id === current.id) {
       return false
     }
 
-    return plan.monthlyPrice > 0 || plan.billingUnit !== 'custom'
+    return plan.billingUnit !== 'custom'
   })
 
   return candidates
-    .filter((plan) => plan.monthlyPrice < current.monthlyPrice && plan.capabilityScore >= floor && plan.bestFor.includes(useCase))
-    .sort((left, right) => left.monthlyPrice - right.monthlyPrice)[0] ?? null
+    .map((plan) => ({
+      plan,
+      effectiveCost: effectiveCandidateCost(current, plan, input),
+    }))
+    .filter(({ plan, effectiveCost }) => effectiveCost < input.currentSpend && plan.capabilityScore >= floor && plan.bestFor.includes(useCase))
+    .sort((left, right) => left.effectiveCost - right.effectiveCost)[0]?.plan ?? null
 }
 
 const usageBasedCandidateSpend = (current: ToolPlan, candidate: ToolPlan, currentSpend: number) => {
@@ -136,8 +189,10 @@ const makeRecommendation = (
   caveat: string | null,
   capabilityImpact: ToolRecommendation['capabilityImpact'],
   flags: string[] = [],
+  recommendationToolId?: ToolId,
 ): ToolRecommendation => {
   const current = currentPlan(input.toolId, input.planId)
+  const effectiveRecommendationToolId = recommendationToolId ?? input.toolId
   const recommendedSpend = recommendationPlan.billingUnit === 'custom'
     ? input.currentSpend
     : recommendationPlan.usageTier === 'usage-based'
@@ -162,6 +217,8 @@ const makeRecommendation = (
     currentPlanId: current.id,
     currentPlanName: current.name,
     currentSpend: input.currentSpend,
+    recommendedToolId: effectiveRecommendationToolId,
+    recommendedToolName: pricingData[effectiveRecommendationToolId].name,
     recommendedPlanId: recommendationPlan.id,
     recommendedPlanName: recommendationPlan.name,
     recommendedSpend,
@@ -174,6 +231,7 @@ const makeRecommendation = (
     capabilityImpact,
     isOptimal: savingsMonthly === 0 && action === 'optimal',
     flags,
+    spendDiscrepancy: buildSpendDiscrepancy(input, currentPlanComputedSpend(input, current)),
   }
 }
 
@@ -197,21 +255,140 @@ const orgFeatureTax = (input: AuditToolInput, candidate: ToolPlan, reason: strin
 const billingSwitch = (input: AuditToolInput, candidate: ToolPlan, reason: string, caveat: string, flags: string[] = []) =>
   makeRecommendation(input, candidate, 'billing-switch', reason, caveat, 'same', flags)
 
+function checkSeatOverprovision(
+  input: AuditToolInput,
+  context: AuditContext,
+  plan: ToolPlan,
+): ToolRecommendation | null {
+  if (plan.billingUnit === 'custom') return null
+  if (plan.usageTier === 'usage-based') return null
+  if (plan.billingUnit.includes('per MTok')) return null
+
+  const excessSeats = input.seats - context.teamSize
+  if (excessSeats <= 0) return null
+
+  const monthlySavings = calcSeatOverprovisionSavings(input.seats, context.teamSize, plan.monthlyPrice)
+  if (monthlySavings <= 0) return null
+
+  const projectedSeats = context.teamSize
+  const projectedSpend = round2(plan.monthlyPrice * Math.max(projectedSeats, plan.minSeats ?? 1))
+  const actualSpend = round2(plan.monthlyPrice * input.seats)
+
+  return {
+    toolId: input.toolId,
+    toolName: pricingData[input.toolId].name,
+    currentPlanId: plan.id,
+    currentPlanName: plan.name,
+    currentSpend: actualSpend,
+    recommendedToolId: input.toolId,
+    recommendedToolName: pricingData[input.toolId].name,
+    recommendedPlanId: plan.id,
+    recommendedPlanName: plan.name,
+    recommendedSpend: projectedSpend,
+    monthlySavings,
+    annualSavings: calcAnnualSavings(monthlySavings),
+    recommendation: `Reduce from ${input.seats} to ${projectedSeats} seats`,
+    action: 'seat-overprovision',
+    reason: `You have ${input.seats} paid seats on ${pricingData[input.toolId].name} ${plan.name} but only ${context.teamSize} people on your team. You are paying for ${excessSeats} seat${excessSeats > 1 ? 's' : ''} that no one is using. At $${plan.monthlyPrice}/seat, that is $${monthlySavings}/month ($${calcAnnualSavings(monthlySavings)}/year) of pure waste with zero capability change.`,
+    caveat: 'Verify the actual seat count in your billing dashboard before reducing. Some plans require a minimum seat count.',
+    capabilityImpact: 'none',
+    isOptimal: false,
+    flags: ['seat-overprovision'],
+    spendDiscrepancy: buildSpendDiscrepancy(input, actualSpend),
+  }
+}
+
+function checkWrongUseCase(
+  input: AuditToolInput,
+  context: AuditContext,
+  plan: ToolPlan,
+): ToolRecommendation | null {
+  const tool = pricingData[input.toolId]
+
+  const isCodingTool = tool.category === 'ai-editor' || tool.category === 'copilot'
+  const isNonCodingUseCase = context.useCase !== 'coding' && context.useCase !== 'mixed'
+
+  if (isCodingTool && isNonCodingUseCase && input.currentSpend > 0) {
+    return {
+      toolId: input.toolId,
+      toolName: tool.name,
+      currentPlanId: plan.id,
+      currentPlanName: plan.name,
+      currentSpend: input.currentSpend,
+      recommendedToolId: input.toolId,
+      recommendedToolName: tool.name,
+      recommendedPlanId: 'free',
+      recommendedPlanName: 'Free',
+      recommendedSpend: 0,
+      monthlySavings: input.currentSpend,
+      annualSavings: calcAnnualSavings(input.currentSpend),
+      recommendation: `Review whether ${tool.name} is needed for a ${context.useCase} team`,
+      action: 'wrong-use-case',
+      reason: `${tool.name} is a coding-focused AI tool (AI code editor / coding assistant). Your team's stated primary use case is ${context.useCase}. Unless part of the team writes code as a secondary task, this subscription may not be delivering value. If nobody actively uses it, the free tier covers light evaluation.`,
+      caveat: 'If part of your team does write code as a secondary task, ignore this flag. This is a review prompt, not a hard recommendation.',
+      capabilityImpact: 'tradeoff',
+      isOptimal: false,
+      flags: ['wrong-use-case'],
+      spendDiscrepancy: buildSpendDiscrepancy(input, currentPlanComputedSpend(input, plan)),
+    }
+  }
+
+  return null
+}
+
 function auditCursor(input: AuditToolInput, context: AuditContext) {
   const plan = currentPlan(input.toolId, input.planId)
 
-  if (plan.id === 'teams' && context.teamSize <= 3) {
+  const seatCheck = checkSeatOverprovision(input, context, plan)
+  if (seatCheck) return seatCheck
+
+  const useCaseCheck = checkWrongUseCase(input, context, plan)
+  if (useCaseCheck) return useCaseCheck
+
+  if (plan.id === 'teams' && input.seats <= 3) {
     const pro = currentPlan('cursor', 'pro')
+    const projectedSpend = pro.monthlyPrice * input.seats
+    const monthlySavings = calcMonthlySavings(input.currentSpend, projectedSpend)
     return orgFeatureTax(
       input,
       pro,
-      'Cursor Teams is carrying org features, not extra model capability, for a small team.',
-      'Assumes no SSO, policy, or central billing requirement; if those are mandatory, Teams remains justified.',
+      `Cursor Teams ($40/seat) adds SSO, admin controls, and centralized billing. With ${input.seats} paid seat${input.seats > 1 ? 's' : ''}, these features are unused overhead. Cursor Pro at $20/seat provides identical AI completions and model access. Switching saves $${monthlySavings}/month with no capability change.`,
+      'Only keep Teams if SSO or centralized billing is a company policy requirement.',
       ['small-team-org-fee'],
     )
   }
 
-  const cheaperSameCapability = sameCapabilityCandidate('cursor', plan, context.useCase)
+  if (plan.id === 'ultra') {
+    const proPlus = currentPlan('cursor', 'pro-plus')
+    const projectedSpend = proPlus.monthlyPrice * input.seats
+    const monthlySavings = calcMonthlySavings(input.currentSpend, projectedSpend)
+    if (monthlySavings > 0) {
+      return usageCheck(
+        input,
+        proPlus,
+        `Cursor Ultra at $200/seat is for developers running full agentic workflows for 8+ hours daily. Pro+ at $60/seat covers intensive professional use for most engineers. Unless you are consistently exhausting Pro+ credits, downgrading saves $${monthlySavings}/month.`,
+        'Check your Cursor usage dashboard for actual credit consumption before downgrading.',
+        ['ultra-headroom'],
+      )
+    }
+  }
+
+  if (plan.id === 'pro-plus') {
+    const pro = currentPlan('cursor', 'pro')
+    const projectedSpend = pro.monthlyPrice * input.seats
+    const monthlySavings = calcMonthlySavings(input.currentSpend, projectedSpend)
+    if (monthlySavings > 0) {
+      return usageCheck(
+        input,
+        pro,
+        `Cursor Pro+ costs $60/seat for a larger credit pool. Cursor Pro at $20/seat covers most full-time developers who are not running multi-file agentic sessions back-to-back. Downgrading saves $${monthlySavings}/month if you are not hitting Pro's credit limit mid-session.`,
+        'If your team regularly sees "credit limit reached" messages before end of day, keep Pro+.',
+        ['pro-plus-headroom'],
+      )
+    }
+  }
+
+  const cheaperSameCapability = sameCapabilityCandidate(input, context.useCase)
   if (cheaperSameCapability) {
     return directPlanDowngrade(
       input,
@@ -222,72 +399,67 @@ function auditCursor(input: AuditToolInput, context: AuditContext) {
     )
   }
 
-  const cheaperSupported = acceptableCheaperCandidate('cursor', plan, context.useCase)
-  if (cheaperSupported && plan.capabilityScore > cheaperSupported.capabilityScore) {
-    return usageCheck(
-      input,
-      cheaperSupported,
-      'A lower Cursor tier still appears sufficient for the stated coding workflow.',
-      'This assumes the team is not relying on the extra request headroom that comes with the current tier.',
-      ['usage-headroom'],
-    )
-  }
-
-  return optimal(input, 'Current Cursor plan looks aligned to the stated workload.', 'No change is justified from the information provided.')
+  return optimal(input, 'Current Cursor plan matches the stated workload and seat count.', null)
 }
 
 function auditGitHubCopilot(input: AuditToolInput, context: AuditContext) {
   const plan = currentPlan(input.toolId, input.planId)
 
-  if (plan.id === 'business' && context.teamSize <= 1) {
+  const seatCheck = checkSeatOverprovision(input, context, plan)
+  if (seatCheck) return seatCheck
+
+  const useCaseCheck = checkWrongUseCase(input, context, plan)
+  if (useCaseCheck) return useCaseCheck
+
+  if (plan.id === 'business' && input.seats <= 2) {
     const pro = currentPlan('github-copilot', 'pro')
+    const projectedSpend = pro.monthlyPrice * input.seats
+    const monthlySavings = calcMonthlySavings(input.currentSpend, projectedSpend)
     return orgFeatureTax(
       input,
       pro,
-      'Copilot Business is adding org controls that a solo developer usually does not need.',
-      'If the account is managed under a team policy or needs IP indemnity, Business may still be required.',
-      ['solo-org-fee'],
+      `GitHub Copilot Business ($19/seat) adds org-wide policy controls, license management, and audit logs. With ${input.seats} paid seat${input.seats > 1 ? 's' : ''}, these features provide zero practical value. Pro at $10/seat provides identical completions and chat. Saves $${monthlySavings}/month.`,
+      'If the account is managed under a GitHub organization with IP indemnity requirements, keep Business.',
+      ['small-team-org-fee'],
     )
   }
 
-  if (plan.id === 'enterprise' && context.teamSize < 50) {
+  if (plan.id === 'enterprise' && input.seats < 50) {
     const business = currentPlan('github-copilot', 'business')
+    const projectedSpend = business.monthlyPrice * input.seats
+    const monthlySavings = calcMonthlySavings(input.currentSpend, projectedSpend)
     return orgFeatureTax(
       input,
       business,
-      'Copilot Enterprise is reserved for larger or compliance-heavy teams.',
-      'If SAML, compliance, or enterprise support is mandatory, this downgrade is not valid.',
+      `GitHub Copilot Enterprise ($39/seat) adds org-wide knowledge indexing and private model fine-tuning. These features deliver meaningful value at 50+ developers or in regulated industries. At ${input.seats} seats, Business at $19/seat covers all standard team needs. Saves $${monthlySavings}/month.`,
+      'Keep Enterprise if private model access or SAML SSO is a compliance requirement.',
       ['enterprise-overkill'],
     )
   }
 
-  const cheaperSameCapability = sameCapabilityCandidate('github-copilot', plan, context.useCase)
-  if (cheaperSameCapability) {
-    return directPlanDowngrade(
-      input,
-      cheaperSameCapability,
-      'Copilot has a cheaper plan with the same coding capability.',
-      'This only holds if the team does not need the current plan’s org features.',
-      ['same-capability'],
-    )
+  if (plan.id === 'pro-plus') {
+    const target = input.seats >= 5 ? currentPlan('github-copilot', 'business') : currentPlan('github-copilot', 'pro')
+    const projectedSpend = target.monthlyPrice * input.seats
+    const monthlySavings = calcMonthlySavings(input.currentSpend, projectedSpend)
+    if (monthlySavings > 0) {
+      return usageCheck(
+        input,
+        target,
+        `GitHub Copilot Pro+ at $39/seat gives access to premium frontier models with very high message limits. ${target.id === 'business' ? `For a team of ${input.seats}, Business at $19/seat provides the same org controls at half the per-seat cost.` : 'Pro at $10/seat provides unlimited completions and chat for most coding workflows.'} Saves $${monthlySavings}/month.`,
+        'Only keep Pro+ if your team specifically depends on the premium model tier or very high request caps.',
+        ['pro-plus-headroom'],
+      )
+    }
   }
 
-  const cheaperSupported = acceptableCheaperCandidate('github-copilot', plan, context.useCase)
-  if (cheaperSupported && plan.capabilityScore > cheaperSupported.capabilityScore) {
-    return usageCheck(
-      input,
-      cheaperSupported,
-      'Copilot can likely be stepped down without losing the stated use-case fit.',
-      'If the team depends on premium request caps or enterprise governance, keep the current tier.',
-      ['usage-headroom'],
-    )
-  }
-
-  return optimal(input, 'Current Copilot plan looks aligned to the team size and coding workload.', 'No cheaper same-purpose plan is clearly justified.')
+  return optimal(input, 'Current Copilot plan looks right for the team size and use case.', null)
 }
 
 function auditClaude(input: AuditToolInput, context: AuditContext) {
   const plan = currentPlan(input.toolId, input.planId)
+
+  const seatCheck = checkSeatOverprovision(input, context, plan)
+  if (seatCheck) return seatCheck
 
   if (plan.id === 'team-standard' || plan.id === 'team-premium') {
     const minimumSeats = plan.minSeats ?? 1
@@ -339,7 +511,7 @@ function auditClaude(input: AuditToolInput, context: AuditContext) {
   }
 
   if (plan.id === 'max-5x') {
-    const cheaperSupported = acceptableCheaperCandidate('claude', plan, context.useCase)
+    const cheaperSupported = acceptableCheaperCandidate(input, context.useCase)
     if (cheaperSupported && cheaperSupported.id === 'pro') {
       return usageCheck(
         input,
@@ -351,7 +523,7 @@ function auditClaude(input: AuditToolInput, context: AuditContext) {
     }
   }
 
-  const cheaperSameCapability = sameCapabilityCandidate('claude', plan, context.useCase)
+  const cheaperSameCapability = sameCapabilityCandidate(input, context.useCase)
   if (cheaperSameCapability) {
     return directPlanDowngrade(
       input,
@@ -362,7 +534,7 @@ function auditClaude(input: AuditToolInput, context: AuditContext) {
     )
   }
 
-  const cheaperSupported = acceptableCheaperCandidate('claude', plan, context.useCase)
+  const cheaperSupported = acceptableCheaperCandidate(input, context.useCase)
   if (cheaperSupported && plan.capabilityScore > cheaperSupported.capabilityScore) {
     return usageCheck(
       input,
@@ -379,26 +551,36 @@ function auditClaude(input: AuditToolInput, context: AuditContext) {
 function auditChatGPT(input: AuditToolInput, context: AuditContext) {
   const plan = currentPlan(input.toolId, input.planId)
 
+  const seatCheck = checkSeatOverprovision(input, context, plan)
+  if (seatCheck) return seatCheck
+
   if (plan.id === 'business-monthly' && input.seats >= 2) {
     const annual = currentPlan('chatgpt', 'business-annual')
-    return billingSwitch(
-      input,
-      annual,
-      'ChatGPT Business Monthly can be moved to the annual billing option without losing capability.',
-      'Only switch if the team is committed to the product for 12+ months.',
-      ['billing-switch'],
-    )
+    const projectedSpend = annual.monthlyPrice * Math.max(input.seats, annual.minSeats ?? 2)
+    const monthlySavings = calcMonthlySavings(input.currentSpend, projectedSpend)
+    if (monthlySavings > 0) {
+      return billingSwitch(
+        input,
+        annual,
+        `ChatGPT Business billed monthly costs $27.10/seat. The annual plan is identical — same features, same limits — at $21.60/seat. At ${input.seats} seats that is $${monthlySavings}/month ($${calcAnnualSavings(monthlySavings)}/year) saved by changing one billing setting.`,
+        'Only switch to annual if you expect to continue using ChatGPT Business for 12+ months.',
+        ['billing-switch'],
+      )
+    }
   }
 
   if ((plan.id === 'business-monthly' || plan.id === 'business-annual') && input.seats === 1) {
     const plus = currentPlan('chatgpt', 'plus')
-    return orgFeatureTax(
-      input,
-      plus,
-      'A single-seat ChatGPT Business plan is paying for workspace features that are unlikely to be used.',
-      'If the account needs enterprise data boundaries or workspace controls, keep Business.',
-      ['solo-org-fee'],
-    )
+    const monthlySavings = calcMonthlySavings(input.currentSpend, plus.monthlyPrice)
+    if (monthlySavings > 0) {
+      return orgFeatureTax(
+        input,
+        plus,
+        `ChatGPT Business is designed for teams: shared workspace, admin controls, and data privacy boundaries. With 1 seat, you get none of those benefits. ChatGPT Plus at $24/month has the same model access and message limits for individual use. Saves $${monthlySavings}/month.`,
+        'If the account needs enterprise data isolation or SSO as a company requirement, keep Business.',
+        ['solo-org-fee'],
+      )
+    }
   }
 
   if (plan.id === 'enterprise' && context.teamSize < 150) {
@@ -406,13 +588,27 @@ function auditChatGPT(input: AuditToolInput, context: AuditContext) {
     return orgFeatureTax(
       input,
       teamPlan,
-      'ChatGPT Enterprise is only justified for very large seat counts or strict procurement needs.',
+      `ChatGPT Enterprise is designed for 150+ seat deployments requiring SOC 2 compliance, SAML SSO, and dedicated support. At ${context.teamSize} people, ${teamPlan.name} covers all practical needs at significantly lower cost.`,
       'If the company has a mandated enterprise contract or SSO requirement, keep Enterprise.',
       ['enterprise-overkill'],
     )
   }
 
-  const cheaperSameCapability = sameCapabilityCandidate('chatgpt', plan, context.useCase)
+  if (plan.id === 'pro') {
+    const plus = currentPlan('chatgpt', 'plus')
+    const monthlySavings = calcMonthlySavings(input.currentSpend, plus.monthlyPrice)
+    if (monthlySavings > 0) {
+      return usageCheck(
+        input,
+        plus,
+        `ChatGPT Pro at $128.90/month provides unlimited high-end reasoning model access for heavy power users. Plus at $24/month covers most professional workflows with generous limits. If you are not regularly hitting Plus message caps, downgrading saves $${monthlySavings}/month.`,
+        'Check your ChatGPT usage page for actual message limit hits before downgrading.',
+        ['usage-headroom'],
+      )
+    }
+  }
+
+  const cheaperSameCapability = sameCapabilityCandidate(input, context.useCase)
   if (cheaperSameCapability) {
     return directPlanDowngrade(
       input,
@@ -423,7 +619,7 @@ function auditChatGPT(input: AuditToolInput, context: AuditContext) {
     )
   }
 
-  const cheaperSupported = acceptableCheaperCandidate('chatgpt', plan, context.useCase)
+  const cheaperSupported = acceptableCheaperCandidate(input, context.useCase)
   if (cheaperSupported && plan.capabilityScore > cheaperSupported.capabilityScore) {
     return usageCheck(
       input,
@@ -434,13 +630,13 @@ function auditChatGPT(input: AuditToolInput, context: AuditContext) {
     )
   }
 
-  return optimal(input, 'Current ChatGPT plan looks aligned to the stated usage.', 'No lower tier is clearly safe from the data provided.')
+  return optimal(input, 'Current ChatGPT plan looks aligned to the team size and usage.', null)
 }
 
 function auditAnthropicApi(input: AuditToolInput, context: AuditContext) {
   const plan = currentPlan(input.toolId, input.planId)
   const flatAlternative = context.teamSize >= 5 ? currentPlan('claude', 'team-standard') : currentPlan('claude', 'pro')
-  const flatCost = billablePlanSpend(flatAlternative, input.seats, input.currentSpend)
+  const flatCost = currentPlanComputedSpend(input, flatAlternative)
 
   if (input.currentSpend > flatCost) {
     if (plan.id === 'opus-4-6') {
@@ -480,7 +676,7 @@ function auditAnthropicApi(input: AuditToolInput, context: AuditContext) {
 function auditOpenAIApi(input: AuditToolInput, context: AuditContext) {
   const plan = currentPlan(input.toolId, input.planId)
   const flatAlternative = context.teamSize >= 2 ? currentPlan('chatgpt', 'business-monthly') : currentPlan('chatgpt', 'plus')
-  const flatCost = billablePlanSpend(flatAlternative, input.seats, input.currentSpend)
+  const flatCost = currentPlanComputedSpend(input, flatAlternative)
 
   if (input.currentSpend > flatCost) {
     if (plan.id === 'gpt-5-5') {
@@ -538,31 +734,43 @@ function auditGemini(input: AuditToolInput, context: AuditContext) {
 function auditWindsurf(input: AuditToolInput, context: AuditContext) {
   const plan = currentPlan(input.toolId, input.planId)
 
-  if (context.useCase === 'coding') {
-    const cursor = currentPlan('cursor', 'pro')
+  const seatCheck = checkSeatOverprovision(input, context, plan)
+  if (seatCheck) return seatCheck
 
-    if ((plan.id === 'teams' || plan.id === 'max') && input.seats <= 3) {
-      return directPlanDowngrade(
-        input,
-        cursor,
-        'Cursor Pro delivers the same coding-use-case capability at a lower price for a small team.',
-        'If the team is actually using Windsurf-specific workflow features, this comparison is invalid.',
-        ['coding-overlap'],
-      )
-    }
+  const useCaseCheck = checkWrongUseCase(input, context, plan)
+  if (useCaseCheck) return useCaseCheck
 
-    if (plan.capabilityScore > cursor.capabilityScore) {
+  if (plan.id === 'max') {
+    const pro = currentPlan('windsurf', 'pro')
+    const projectedSpend = pro.monthlyPrice * input.seats
+    const monthlySavings = calcMonthlySavings(input.currentSpend, projectedSpend)
+    if (monthlySavings > 0) {
       return usageCheck(
         input,
-        cursor,
-        'Windsurf appears to be carrying extra headroom that a cheaper coding assistant can provide.',
-        'If the team regularly hits Windsurf limits, the higher tier may still be justified.',
-        ['usage-headroom'],
+        pro,
+        `Windsurf Max at $200/seat provides unlimited credits for developers running intensive agentic coding around the clock. Pro at $20/seat includes 500 credits/month — sufficient for full-time professional development. If the team is not exhausting Pro credits before month end, downgrading saves $${monthlySavings}/month.`,
+        'Check your Windsurf credit consumption before downgrading.',
+        ['high-usage-tier'],
       )
     }
   }
 
-  return optimal(input, 'Current Windsurf plan looks aligned to the coding workload.', 'No cheaper coding-first plan is clearly safer.')
+  if (plan.id === 'teams' && input.seats <= 3) {
+    const pro = currentPlan('windsurf', 'pro')
+    const projectedSpend = pro.monthlyPrice * input.seats
+    const monthlySavings = calcMonthlySavings(input.currentSpend, projectedSpend)
+    if (monthlySavings > 0) {
+      return orgFeatureTax(
+        input,
+        pro,
+        `Windsurf Teams ($40/seat) adds admin dashboard, SSO, and usage analytics. With ${input.seats} paid seat${input.seats > 1 ? 's' : ''}, these features go unused. Pro at $20/seat has the same AI IDE experience and credit pool. Saves $${monthlySavings}/month.`,
+        'Keep Teams if SSO or centralized admin is a company requirement.',
+        ['small-team-org-fee'],
+      )
+    }
+  }
+
+  return optimal(input, 'Current Windsurf plan matches the stated workload.', null)
 }
 
 export function detectCrossToolRedundancy(context: AuditContext) {
@@ -610,7 +818,6 @@ export function detectCrossToolRedundancy(context: AuditContext) {
       }
     }
   } catch (e) {
-    // best-effort only; do not throw the audit for consolidation heuristics
   }
 
   return {
@@ -623,7 +830,6 @@ export function detectCrossToolRedundancy(context: AuditContext) {
   }
 }
 
-// Cross-vendor candidate finder for single-plan audits
 function findCrossVendorCandidate(input: AuditToolInput, context: AuditContext) {
   const current = currentPlan(input.toolId, input.planId)
   const currentCost = input.currentSpend
@@ -637,7 +843,9 @@ function findCrossVendorCandidate(input: AuditToolInput, context: AuditContext) 
     for (const plan of tool.plans) {
       if (!plan.bestFor.includes(context.useCase)) continue
       if (plan.orgFeatures && !current.orgFeatures) continue
+      if (current.orgFeatures && !plan.orgFeatures) continue
       if (plan.capabilityScore < floor) continue
+      if (plan.capabilityScore < current.capabilityScore) continue
 
       let candidateCost = Number.MAX_SAFE_INTEGER
       if (plan.billingUnit === 'custom') continue
@@ -659,9 +867,8 @@ function findCrossVendorCandidate(input: AuditToolInput, context: AuditContext) 
 
   return best
 }
-
 export function evaluateToolRecommendation(input: AuditToolInput, context: AuditContext): ToolRecommendation {
-  // First run the per-tool rules
+
   let base: ToolRecommendation
   switch (input.toolId) {
     case 'cursor':
@@ -693,7 +900,6 @@ export function evaluateToolRecommendation(input: AuditToolInput, context: Audit
       break
   }
 
-  // If per-tool rules produced no change (optimal), try cross-vendor single-plan comparison
   try {
     if (context.tools.length === 1 && base.action === 'optimal') {
       const cross = findCrossVendorCandidate(input, context)
@@ -701,14 +907,26 @@ export function evaluateToolRecommendation(input: AuditToolInput, context: Audit
         const current = currentPlan(input.toolId, input.planId)
         const caveat = `Cross-vendor candidate ${pricingData[cross.toolId].name} ${cross.plan.name} — validate org features and request limits.`
         if (cross.plan.capabilityScore >= current.capabilityScore) {
-          return makeRecommendation(input, cross.plan, 'plan-downgrade', 'Cheaper cross-vendor plan provides equal or higher capability for this use case.', caveat, 'same', ['cross-vendor'])
+          return makeRecommendation(input, cross.plan, 'plan-downgrade', 'Cheaper cross-vendor plan provides equal or higher capability for this use case.', caveat, 'same', ['cross-vendor'], cross.toolId)
         }
 
-        return makeRecommendation(input, cross.plan, 'usage-check', 'Cheaper cross-vendor plan exists but may be lower capability; review tradeoffs.', caveat, 'tradeoff', ['cross-vendor-tradeoff'])
+        return makeRecommendation(input, cross.plan, 'usage-check', 'Cheaper cross-vendor plan exists but may be lower capability; review tradeoffs.', caveat, 'tradeoff', ['cross-vendor-tradeoff'], cross.toolId)
       }
     }
   } catch (e) {
-    // ignore cross-vendor failures
+  }
+
+  const plan = currentPlan(input.toolId, input.planId)
+  if (plan.billingUnit !== 'custom' && plan.usageTier !== 'usage-based') {
+    const computedSpend = currentPlanComputedSpend(input, plan)
+    const discrepancy = buildSpendDiscrepancy(input, computedSpend)
+    if (discrepancy && discrepancy.flag && discrepancy.difference > 10) {
+      return {
+        ...base,
+        flags: [...base.flags, 'spend-discrepancy'],
+        spendDiscrepancy: discrepancy,
+      }
+    }
   }
 
   return base

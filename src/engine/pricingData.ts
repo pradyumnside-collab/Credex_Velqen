@@ -1,3 +1,5 @@
+export type UseCase = 'coding' | 'writing' | 'data' | 'research' | 'mixed'
+
 export type ToolId =
   | 'cursor'
   | 'github-copilot'
@@ -8,6 +10,10 @@ export type ToolId =
   | 'gemini'
   | 'windsurf'
 
+export type PlanUsageTier = 'light' | 'standard' | 'heavy' | 'unlimited' | 'usage-based'
+export type PlanLimitSignal = 'capped' | 'generous' | 'very-high' | 'unlimited' | 'usage-based'
+export type ToolCategory = 'ai-editor' | 'copilot' | 'chat-ai' | 'api-platform'
+
 export type ToolPlan = {
   id: string
   name: string
@@ -16,38 +22,51 @@ export type ToolPlan = {
   sourceUrl: string
   description: string
   priceLabel?: string
+  usageTier: PlanUsageTier
+  capabilityScore: 1 | 2 | 3 | 4 | 5
+  requestLimitSignal: PlanLimitSignal
+  orgFeatures: boolean
+  bestFor: UseCase[]
+  notSuitableFor?: string
+  minSeats?: number
+  monthlyMinimum?: number
+  inputPricePerMTok?: number
+  outputPricePerMTok?: number
 }
 
 export type ToolPricing = {
   id: ToolId
   name: string
-  category: 'coding' | 'writing' | 'research' | 'platform'
+  category: ToolCategory
   sourceUrl: string
   plans: ToolPlan[]
   defaultPlanId: string
 }
 
-/**
- * Pricing data sourced from PRICING_DATA.md (verified 2026-05-07)
- * Single source of truth for all 8 AI tools and their plans
- */
+const buildPlan = (plan: ToolPlan): ToolPlan => plan
+
 export const pricingData: Record<ToolId, ToolPricing> = {
   cursor: {
     id: 'cursor',
     name: 'Cursor',
-    category: 'coding',
+    category: 'ai-editor',
     sourceUrl: 'https://cursor.com/pricing',
     defaultPlanId: 'pro',
     plans: [
-      {
+      buildPlan({
         id: 'hobby',
         name: 'Hobby',
         monthlyPrice: 0,
         billingUnit: 'per user',
         sourceUrl: 'https://cursor.com/pricing',
-        description: 'Free forever for light individual usage.',
-      },
-      {
+        description: 'Free tier for light individual usage.',
+        usageTier: 'light',
+        capabilityScore: 1,
+        requestLimitSignal: 'capped',
+        orgFeatures: false,
+        bestFor: ['coding'],
+      }),
+      buildPlan({
         id: 'pro',
         name: 'Pro',
         monthlyPrice: 20,
@@ -55,8 +74,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://cursor.com/pricing',
         description: 'Individual plan for active developers.',
         priceLabel: '$20/mo',
-      },
-      {
+        usageTier: 'standard',
+        capabilityScore: 3,
+        requestLimitSignal: 'generous',
+        orgFeatures: false,
+        bestFor: ['coding', 'mixed'],
+      }),
+      buildPlan({
         id: 'pro-plus',
         name: 'Pro+',
         monthlyPrice: 60,
@@ -64,8 +88,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://cursor.com/pricing',
         description: 'Higher usage tier for power users.',
         priceLabel: '$60/mo',
-      },
-      {
+        usageTier: 'heavy',
+        capabilityScore: 4,
+        requestLimitSignal: 'very-high',
+        orgFeatures: false,
+        bestFor: ['coding'],
+      }),
+      buildPlan({
         id: 'ultra',
         name: 'Ultra',
         monthlyPrice: 200,
@@ -73,8 +102,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://cursor.com/pricing',
         description: 'Maximum usage tier for heavy power users.',
         priceLabel: '$200/mo',
-      },
-      {
+        usageTier: 'unlimited',
+        capabilityScore: 5,
+        requestLimitSignal: 'unlimited',
+        orgFeatures: false,
+        bestFor: ['coding'],
+      }),
+      buildPlan({
         id: 'teams',
         name: 'Teams',
         monthlyPrice: 40,
@@ -82,8 +116,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://cursor.com/pricing',
         description: 'Team plan with org controls and admin features.',
         priceLabel: '$40/user/mo',
-      },
-      {
+        usageTier: 'standard',
+        capabilityScore: 3,
+        requestLimitSignal: 'generous',
+        orgFeatures: true,
+        bestFor: ['coding', 'mixed'],
+      }),
+      buildPlan({
         id: 'enterprise',
         name: 'Enterprise',
         monthlyPrice: 0,
@@ -91,25 +130,35 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://cursor.com/pricing',
         description: 'Contact sales for enterprise pricing.',
         priceLabel: 'Custom',
-      },
+        usageTier: 'unlimited',
+        capabilityScore: 5,
+        requestLimitSignal: 'unlimited',
+        orgFeatures: true,
+        bestFor: ['coding', 'mixed'],
+      }),
     ],
   },
   'github-copilot': {
     id: 'github-copilot',
     name: 'GitHub Copilot',
-    category: 'coding',
+    category: 'copilot',
     sourceUrl: 'https://github.com/features/copilot/plans',
     defaultPlanId: 'pro',
     plans: [
-      {
+      buildPlan({
         id: 'free',
         name: 'Free',
         monthlyPrice: 0,
         billingUnit: 'individual',
         sourceUrl: 'https://github.com/features/copilot/plans',
         description: 'Free tier with limited usage.',
-      },
-      {
+        usageTier: 'light',
+        capabilityScore: 1,
+        requestLimitSignal: 'capped',
+        orgFeatures: false,
+        bestFor: ['coding'],
+      }),
+      buildPlan({
         id: 'pro',
         name: 'Pro',
         monthlyPrice: 10,
@@ -117,8 +166,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://github.com/features/copilot/plans',
         description: 'Individual plan for personal coding assistance.',
         priceLabel: '$10/mo',
-      },
-      {
+        usageTier: 'standard',
+        capabilityScore: 3,
+        requestLimitSignal: 'generous',
+        orgFeatures: false,
+        bestFor: ['coding', 'mixed'],
+      }),
+      buildPlan({
         id: 'pro-plus',
         name: 'Pro+',
         monthlyPrice: 39,
@@ -126,8 +180,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://github.com/features/copilot/plans',
         description: 'Higher-capacity individual plan.',
         priceLabel: '$39/mo',
-      },
-      {
+        usageTier: 'heavy',
+        capabilityScore: 4,
+        requestLimitSignal: 'very-high',
+        orgFeatures: false,
+        bestFor: ['coding'],
+      }),
+      buildPlan({
         id: 'business',
         name: 'Business',
         monthlyPrice: 19,
@@ -135,8 +194,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://github.com/features/copilot/plans',
         description: 'Organization controls and policy management.',
         priceLabel: '$19/mo',
-      },
-      {
+        usageTier: 'standard',
+        capabilityScore: 3,
+        requestLimitSignal: 'generous',
+        orgFeatures: true,
+        bestFor: ['coding', 'mixed'],
+      }),
+      buildPlan({
         id: 'enterprise',
         name: 'Enterprise',
         monthlyPrice: 39,
@@ -144,96 +208,144 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://github.com/features/copilot/plans',
         description: 'Advanced enterprise governance and compliance.',
         priceLabel: '$39/mo',
-      },
+        usageTier: 'heavy',
+        capabilityScore: 4,
+        requestLimitSignal: 'very-high',
+        orgFeatures: true,
+        bestFor: ['coding'],
+      }),
     ],
   },
   claude: {
     id: 'claude',
     name: 'Claude',
-    category: 'writing',
-    sourceUrl: 'https://claude.com/pricing',
+    category: 'chat-ai',
+    sourceUrl: 'https://claude.ai/pricing',
     defaultPlanId: 'pro',
     plans: [
-      {
+      buildPlan({
         id: 'free',
         name: 'Free',
         monthlyPrice: 0,
         billingUnit: 'individual',
-        sourceUrl: 'https://claude.com/pricing',
+        sourceUrl: 'https://claude.ai/pricing',
         description: 'Free tier with tighter usage limits.',
-      },
-      {
+        usageTier: 'light',
+        capabilityScore: 2,
+        requestLimitSignal: 'capped',
+        orgFeatures: false,
+        bestFor: ['writing', 'research', 'coding'],
+      }),
+      buildPlan({
         id: 'pro',
         name: 'Pro',
         monthlyPrice: 20,
         billingUnit: 'per user/month',
-        sourceUrl: 'https://claude.com/pricing',
+        sourceUrl: 'https://claude.ai/pricing',
         description: 'Best fit for power users and individual contributors.',
         priceLabel: '$20/mo',
-      },
-      {
+        usageTier: 'standard',
+        capabilityScore: 3,
+        requestLimitSignal: 'generous',
+        orgFeatures: false,
+        bestFor: ['writing', 'research', 'coding', 'mixed'],
+      }),
+      buildPlan({
         id: 'max-5x',
         name: 'Max 5×',
         monthlyPrice: 100,
         billingUnit: 'per user/month',
-        sourceUrl: 'https://claude.com/pricing',
+        sourceUrl: 'https://claude.ai/pricing',
         description: 'Higher usage tier for heavy power users.',
         priceLabel: '$100/mo',
-      },
-      {
+        usageTier: 'heavy',
+        capabilityScore: 4,
+        requestLimitSignal: 'very-high',
+        orgFeatures: false,
+        bestFor: ['writing', 'research', 'coding'],
+      }),
+      buildPlan({
         id: 'max-20x',
         name: 'Max 20×',
         monthlyPrice: 200,
         billingUnit: 'per user/month',
-        sourceUrl: 'https://claude.com/pricing',
+        sourceUrl: 'https://claude.ai/pricing',
         description: 'Highest usage tier for the heaviest Claude users.',
         priceLabel: '$200/mo',
-      },
-      {
+        usageTier: 'unlimited',
+        capabilityScore: 5,
+        requestLimitSignal: 'unlimited',
+        orgFeatures: false,
+        bestFor: ['writing', 'research', 'coding', 'data'],
+      }),
+      buildPlan({
         id: 'team-standard',
         name: 'Team Standard',
         monthlyPrice: 30,
         billingUnit: 'per seat/month',
-        sourceUrl: 'https://claude.com/pricing',
+        sourceUrl: 'https://claude.ai/pricing',
         description: 'Shared workspace and team collaboration features.',
         priceLabel: '$30/seat/mo',
-      },
-      {
+        usageTier: 'standard',
+        capabilityScore: 3,
+        requestLimitSignal: 'generous',
+        orgFeatures: true,
+        bestFor: ['writing', 'research', 'mixed'],
+        minSeats: 5,
+        monthlyMinimum: 150,
+      }),
+      buildPlan({
         id: 'team-premium',
         name: 'Team Premium',
         monthlyPrice: 125,
         billingUnit: 'per seat/month',
-        sourceUrl: 'https://claude.com/pricing',
+        sourceUrl: 'https://claude.ai/pricing',
         description: 'Premium team tier with expanded usage.',
         priceLabel: '$125/seat/mo',
-      },
-      {
+        usageTier: 'heavy',
+        capabilityScore: 4,
+        requestLimitSignal: 'very-high',
+        orgFeatures: true,
+        bestFor: ['writing', 'research', 'coding', 'mixed'],
+        minSeats: 5,
+      }),
+      buildPlan({
         id: 'enterprise',
         name: 'Enterprise',
         monthlyPrice: 0,
         billingUnit: 'custom',
-        sourceUrl: 'https://claude.com/pricing',
+        sourceUrl: 'https://claude.ai/pricing',
         description: 'Contact sales for enterprise pricing.',
         priceLabel: 'Custom',
-      },
+        usageTier: 'unlimited',
+        capabilityScore: 5,
+        requestLimitSignal: 'unlimited',
+        orgFeatures: true,
+        bestFor: ['writing', 'research', 'coding', 'data', 'mixed'],
+      }),
     ],
   },
   chatgpt: {
     id: 'chatgpt',
     name: 'ChatGPT',
-    category: 'writing',
+    category: 'chat-ai',
     sourceUrl: 'https://openai.com/pricing',
     defaultPlanId: 'plus',
     plans: [
-      {
+      buildPlan({
         id: 'free',
         name: 'Free',
         monthlyPrice: 0,
         billingUnit: 'individual',
         sourceUrl: 'https://openai.com/pricing',
         description: 'Free tier with light usage and basic access.',
-      },
-      {
+        usageTier: 'light',
+        capabilityScore: 2,
+        requestLimitSignal: 'capped',
+        orgFeatures: false,
+        bestFor: ['writing', 'research'],
+      }),
+      buildPlan({
         id: 'go',
         name: 'Go',
         monthlyPrice: 4.8,
@@ -241,8 +353,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://openai.com/pricing',
         description: 'Low-cost entry tier with ads.',
         priceLabel: '$4.80/mo',
-      },
-      {
+        usageTier: 'light',
+        capabilityScore: 2,
+        requestLimitSignal: 'capped',
+        orgFeatures: false,
+        bestFor: ['writing'],
+      }),
+      buildPlan({
         id: 'plus',
         name: 'Plus',
         monthlyPrice: 24,
@@ -250,8 +367,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://openai.com/pricing',
         description: 'Popular plan for individual power users.',
         priceLabel: '$24/mo',
-      },
-      {
+        usageTier: 'standard',
+        capabilityScore: 3,
+        requestLimitSignal: 'generous',
+        orgFeatures: false,
+        bestFor: ['writing', 'research', 'data', 'coding', 'mixed'],
+      }),
+      buildPlan({
         id: 'pro',
         name: 'Pro',
         monthlyPrice: 128.9,
@@ -259,8 +381,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://openai.com/pricing',
         description: 'High-usage personal tier for heavy users.',
         priceLabel: '$128.90/mo',
-      },
-      {
+        usageTier: 'unlimited',
+        capabilityScore: 5,
+        requestLimitSignal: 'unlimited',
+        orgFeatures: false,
+        bestFor: ['research', 'data', 'coding'],
+      }),
+      buildPlan({
         id: 'business-codex',
         name: 'Business Codex',
         monthlyPrice: 0,
@@ -268,8 +395,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://openai.com/pricing',
         description: 'Usage-based business coding plan.',
         priceLabel: 'Usage-based',
-      },
-      {
+        usageTier: 'usage-based',
+        capabilityScore: 3,
+        requestLimitSignal: 'usage-based',
+        orgFeatures: true,
+        bestFor: ['coding'],
+      }),
+      buildPlan({
         id: 'business-annual',
         name: 'Business (Annual)',
         monthlyPrice: 21.6,
@@ -277,8 +409,14 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://openai.com/pricing',
         description: 'Annual billing business tier (minimum 2 users).',
         priceLabel: '$21.60/mo billed annually',
-      },
-      {
+        usageTier: 'standard',
+        capabilityScore: 3,
+        requestLimitSignal: 'generous',
+        orgFeatures: true,
+        bestFor: ['writing', 'research', 'mixed'],
+        minSeats: 2,
+      }),
+      buildPlan({
         id: 'business-monthly',
         name: 'Business (Monthly)',
         monthlyPrice: 27.1,
@@ -286,8 +424,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://openai.com/pricing',
         description: 'Monthly billing business tier.',
         priceLabel: '$27.10/mo',
-      },
-      {
+        usageTier: 'standard',
+        capabilityScore: 3,
+        requestLimitSignal: 'generous',
+        orgFeatures: true,
+        bestFor: ['writing', 'research', 'mixed'],
+      }),
+      buildPlan({
         id: 'enterprise',
         name: 'Enterprise',
         monthlyPrice: 0,
@@ -295,17 +438,22 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://openai.com/pricing',
         description: 'Custom enterprise contract pricing.',
         priceLabel: 'Custom',
-      },
+        usageTier: 'unlimited',
+        capabilityScore: 5,
+        requestLimitSignal: 'unlimited',
+        orgFeatures: true,
+        bestFor: ['writing', 'research', 'data', 'coding', 'mixed'],
+      }),
     ],
   },
   'anthropic-api': {
     id: 'anthropic-api',
     name: 'Anthropic API',
-    category: 'platform',
+    category: 'api-platform',
     sourceUrl: 'https://www.anthropic.com/pricing',
     defaultPlanId: 'sonnet-4-6',
     plans: [
-      {
+      buildPlan({
         id: 'opus-4-6',
         name: 'Claude Opus 4.6',
         monthlyPrice: 0,
@@ -313,8 +461,15 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://www.anthropic.com/pricing',
         description: 'Pay-as-you-go: Input $15 / MTok, output $75 / MTok.',
         priceLabel: '$15 input / $75 output per MTok',
-      },
-      {
+        usageTier: 'usage-based',
+        capabilityScore: 5,
+        requestLimitSignal: 'usage-based',
+        orgFeatures: false,
+        bestFor: ['research', 'coding', 'data'],
+        inputPricePerMTok: 15,
+        outputPricePerMTok: 75,
+      }),
+      buildPlan({
         id: 'sonnet-4-6',
         name: 'Claude Sonnet 4.6',
         monthlyPrice: 0,
@@ -322,8 +477,15 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://www.anthropic.com/pricing',
         description: 'Pay-as-you-go: Input $3 / MTok, output $15 / MTok.',
         priceLabel: '$3 input / $15 output per MTok',
-      },
-      {
+        usageTier: 'usage-based',
+        capabilityScore: 3,
+        requestLimitSignal: 'usage-based',
+        orgFeatures: false,
+        bestFor: ['writing', 'coding', 'research', 'mixed'],
+        inputPricePerMTok: 3,
+        outputPricePerMTok: 15,
+      }),
+      buildPlan({
         id: 'haiku-4-5',
         name: 'Claude Haiku 4.5',
         monthlyPrice: 0,
@@ -331,17 +493,29 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://www.anthropic.com/pricing',
         description: 'Pay-as-you-go: Input $0.80 / MTok, output $4 / MTok.',
         priceLabel: '$0.80 input / $4 output per MTok',
-      },
-      {
+        usageTier: 'usage-based',
+        capabilityScore: 2,
+        requestLimitSignal: 'usage-based',
+        orgFeatures: false,
+        bestFor: ['data', 'writing'],
+        inputPricePerMTok: 0.8,
+        outputPricePerMTok: 4,
+      }),
+      buildPlan({
         id: 'batch-api',
         name: 'Batch API',
         monthlyPrice: 0,
-        billingUnit: 'discounted usage',
+        billingUnit: '50% off standard per-token rate (async)',
         sourceUrl: 'https://www.anthropic.com/pricing',
-        description: '50% off standard pricing for async workloads.',
+        description: '50% off all model prices for workloads that tolerate up to 24h latency.',
         priceLabel: '50% off standard',
-      },
-      {
+        usageTier: 'usage-based',
+        capabilityScore: 3,
+        requestLimitSignal: 'usage-based',
+        orgFeatures: false,
+        bestFor: ['data'],
+      }),
+      buildPlan({
         id: 'prompt-cache',
         name: 'Prompt Cache Read',
         monthlyPrice: 0,
@@ -349,17 +523,22 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://www.anthropic.com/pricing',
         description: 'Prompt cache reads reduce repeated-context costs.',
         priceLabel: '~$0.30 / MTok',
-      },
+        usageTier: 'usage-based',
+        capabilityScore: 3,
+        requestLimitSignal: 'usage-based',
+        orgFeatures: false,
+        bestFor: ['coding', 'research', 'mixed'],
+      }),
     ],
   },
   'openai-api': {
     id: 'openai-api',
     name: 'OpenAI API',
-    category: 'platform',
+    category: 'api-platform',
     sourceUrl: 'https://openai.com/api/pricing',
     defaultPlanId: 'gpt-5-4',
     plans: [
-      {
+      buildPlan({
         id: 'gpt-5-5',
         name: 'GPT-5.5',
         monthlyPrice: 0,
@@ -367,8 +546,15 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://openai.com/api/pricing',
         description: 'Pay-as-you-go: Input $5 / MTok, cached $0.50 / MTok, output $30 / MTok.',
         priceLabel: '$5 input / $30 output per MTok',
-      },
-      {
+        usageTier: 'usage-based',
+        capabilityScore: 5,
+        requestLimitSignal: 'usage-based',
+        orgFeatures: false,
+        bestFor: ['research', 'coding', 'data'],
+        inputPricePerMTok: 5,
+        outputPricePerMTok: 30,
+      }),
+      buildPlan({
         id: 'gpt-5-4',
         name: 'GPT-5.4',
         monthlyPrice: 0,
@@ -376,8 +562,15 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://openai.com/api/pricing',
         description: 'Pay-as-you-go: Input $2.50 / MTok, cached $0.25 / MTok, output $15 / MTok.',
         priceLabel: '$2.50 input / $15 output per MTok',
-      },
-      {
+        usageTier: 'usage-based',
+        capabilityScore: 3,
+        requestLimitSignal: 'usage-based',
+        orgFeatures: false,
+        bestFor: ['writing', 'coding', 'research', 'mixed'],
+        inputPricePerMTok: 2.5,
+        outputPricePerMTok: 15,
+      }),
+      buildPlan({
         id: 'gpt-5-4-mini',
         name: 'GPT-5.4 mini',
         monthlyPrice: 0,
@@ -385,34 +578,51 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://openai.com/api/pricing',
         description: 'Pay-as-you-go: Input $0.75 / MTok, cached $0.075 / MTok, output $4.50 / MTok.',
         priceLabel: '$0.75 input / $4.50 output per MTok',
-      },
-      {
+        usageTier: 'usage-based',
+        capabilityScore: 2,
+        requestLimitSignal: 'usage-based',
+        orgFeatures: false,
+        bestFor: ['data', 'writing'],
+        inputPricePerMTok: 0.75,
+        outputPricePerMTok: 4.5,
+      }),
+      buildPlan({
         id: 'batch-api',
         name: 'Batch API',
         monthlyPrice: 0,
-        billingUnit: 'discounted usage',
+        billingUnit: '50% off standard per-token rate (async)',
         sourceUrl: 'https://openai.com/api/pricing',
         description: '50% off standard pricing for batch workloads.',
         priceLabel: '50% off standard',
-      },
+        usageTier: 'usage-based',
+        capabilityScore: 3,
+        requestLimitSignal: 'usage-based',
+        orgFeatures: false,
+        bestFor: ['data'],
+      }),
     ],
   },
   gemini: {
     id: 'gemini',
     name: 'Gemini',
-    category: 'research',
+    category: 'chat-ai',
     sourceUrl: 'https://gemini.google/subscriptions',
     defaultPlanId: 'plus',
     plans: [
-      {
+      buildPlan({
         id: 'free',
         name: 'Free',
         monthlyPrice: 0,
         billingUnit: 'individual',
         sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
         description: 'Entry tier for lighter individual use.',
-      },
-      {
+        usageTier: 'light',
+        capabilityScore: 2,
+        requestLimitSignal: 'capped',
+        orgFeatures: false,
+        bestFor: ['writing', 'research'],
+      }),
+      buildPlan({
         id: 'plus',
         name: 'Google AI Plus',
         monthlyPrice: 4.8,
@@ -420,8 +630,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://gemini.google/subscriptions',
         description: 'Lower-cost subscription tier.',
         priceLabel: '$4.80/mo',
-      },
-      {
+        usageTier: 'light',
+        capabilityScore: 2,
+        requestLimitSignal: 'capped',
+        orgFeatures: false,
+        bestFor: ['writing'],
+      }),
+      buildPlan({
         id: 'pro',
         name: 'Google AI Pro',
         monthlyPrice: 23.3,
@@ -429,8 +644,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://gemini.google/subscriptions',
         description: 'Premium subscription tier.',
         priceLabel: '$23.30/mo',
-      },
-      {
+        usageTier: 'standard',
+        capabilityScore: 3,
+        requestLimitSignal: 'generous',
+        orgFeatures: false,
+        bestFor: ['writing', 'research', 'mixed'],
+      }),
+      buildPlan({
         id: 'ultra',
         name: 'Google AI Ultra',
         monthlyPrice: 293,
@@ -438,8 +658,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://gemini.google/subscriptions',
         description: 'Highest-tier subscription plan.',
         priceLabel: '$293/mo',
-      },
-      {
+        usageTier: 'heavy',
+        capabilityScore: 4,
+        requestLimitSignal: 'very-high',
+        orgFeatures: true,
+        bestFor: ['research', 'data', 'coding'],
+      }),
+      buildPlan({
         id: 'flash-lite',
         name: 'Gemini 3.1 Flash-Lite',
         monthlyPrice: 0,
@@ -447,8 +672,15 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
         description: 'Pay-as-you-go: Input $0.25 / MTok, output $1.50 / MTok.',
         priceLabel: '$0.25 input / $1.50 output per MTok',
-      },
-      {
+        usageTier: 'usage-based',
+        capabilityScore: 2,
+        requestLimitSignal: 'usage-based',
+        orgFeatures: false,
+        bestFor: ['data', 'writing'],
+        inputPricePerMTok: 0.25,
+        outputPricePerMTok: 1.5,
+      }),
+      buildPlan({
         id: 'pro-api',
         name: 'Gemini 2.5 Pro',
         monthlyPrice: 0,
@@ -456,8 +688,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
         description: 'Pay-as-you-go: Input $1.25–$2.50 / MTok, output $10–$15 / MTok.',
         priceLabel: '$1.25+ input / $10+ output per MTok',
-      },
-      {
+        usageTier: 'usage-based',
+        capabilityScore: 3,
+        requestLimitSignal: 'usage-based',
+        orgFeatures: false,
+        bestFor: ['research', 'coding', 'mixed'],
+      }),
+      buildPlan({
         id: 'flash',
         name: 'Gemini 2.5 Flash',
         monthlyPrice: 0,
@@ -465,25 +702,37 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
         description: 'Pay-as-you-go: Input $0.30 / MTok, output $2.50 / MTok.',
         priceLabel: '$0.30 input / $2.50 output per MTok',
-      },
+        usageTier: 'usage-based',
+        capabilityScore: 2,
+        requestLimitSignal: 'usage-based',
+        orgFeatures: false,
+        bestFor: ['data', 'writing'],
+        inputPricePerMTok: 0.3,
+        outputPricePerMTok: 2.5,
+      }),
     ],
   },
   windsurf: {
     id: 'windsurf',
     name: 'Windsurf',
-    category: 'coding',
+    category: 'ai-editor',
     sourceUrl: 'https://windsurf.com/pricing',
     defaultPlanId: 'pro',
     plans: [
-      {
+      buildPlan({
         id: 'free',
         name: 'Free',
         monthlyPrice: 0,
         billingUnit: 'individual',
         sourceUrl: 'https://windsurf.com/pricing',
         description: 'Starter plan for light use.',
-      },
-      {
+        usageTier: 'light',
+        capabilityScore: 2,
+        requestLimitSignal: 'capped',
+        orgFeatures: false,
+        bestFor: ['coding'],
+      }),
+      buildPlan({
         id: 'pro',
         name: 'Pro',
         monthlyPrice: 20,
@@ -491,8 +740,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://windsurf.com/pricing',
         description: 'Individual plan for regular coding use.',
         priceLabel: '$20/mo',
-      },
-      {
+        usageTier: 'standard',
+        capabilityScore: 3,
+        requestLimitSignal: 'generous',
+        orgFeatures: false,
+        bestFor: ['coding', 'mixed'],
+      }),
+      buildPlan({
         id: 'max',
         name: 'Max',
         monthlyPrice: 200,
@@ -500,8 +754,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://windsurf.com/pricing',
         description: 'Unlimited credits plan for heavy use.',
         priceLabel: '$200/mo',
-      },
-      {
+        usageTier: 'unlimited',
+        capabilityScore: 5,
+        requestLimitSignal: 'unlimited',
+        orgFeatures: false,
+        bestFor: ['coding'],
+      }),
+      buildPlan({
         id: 'teams',
         name: 'Teams',
         monthlyPrice: 40,
@@ -509,8 +768,13 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://windsurf.com/pricing',
         description: 'Team collaboration and admin features.',
         priceLabel: '$40/mo',
-      },
-      {
+        usageTier: 'standard',
+        capabilityScore: 3,
+        requestLimitSignal: 'generous',
+        orgFeatures: true,
+        bestFor: ['coding', 'mixed'],
+      }),
+      buildPlan({
         id: 'enterprise',
         name: 'Enterprise',
         monthlyPrice: 0,
@@ -518,7 +782,12 @@ export const pricingData: Record<ToolId, ToolPricing> = {
         sourceUrl: 'https://windsurf.com/pricing',
         description: 'Contact sales for enterprise pricing.',
         priceLabel: 'Contact sales',
-      },
+        usageTier: 'unlimited',
+        capabilityScore: 5,
+        requestLimitSignal: 'unlimited',
+        orgFeatures: true,
+        bestFor: ['coding', 'mixed'],
+      }),
     ],
   },
 }
@@ -529,3 +798,49 @@ export const toolOptions = toolOrder.map((toolId) => pricingData[toolId])
 
 export type ToolOption = (typeof toolOptions)[number]
 export type ToolPlanOption = ToolOption['plans'][number]
+
+export function getTool(toolId: ToolId) {
+  return pricingData[toolId] ?? null
+}
+
+export function getPlan(toolId: ToolId, planId: string) {
+  const tool = pricingData[toolId]
+  return tool?.plans.find((plan) => plan.id === planId) ?? null
+}
+
+export function getPlans(toolId: ToolId) {
+  return pricingData[toolId]?.plans ?? []
+}
+
+export function resolvePlanId(toolId: ToolId, planId: string) {
+  const aliases: Partial<Record<ToolId, Record<string, string>>> = {
+    cursor: { business: 'teams' },
+    'github-copilot': { individual: 'pro' },
+    chatgpt: { team: 'business-monthly' },
+  }
+
+  return aliases[toolId]?.[planId] ?? planId
+}
+
+export function findCheaperAlternativePlan(toolId: ToolId, currentPlanId: string, useCase: UseCase) {
+  const tool = pricingData[toolId]
+  const currentPlan = getPlan(toolId, resolvePlanId(toolId, currentPlanId))
+
+  if (!tool || !currentPlan || currentPlan.monthlyPrice === 0 && currentPlan.billingUnit === 'custom') {
+    return null
+  }
+
+  const candidates = tool.plans.filter((plan) => {
+    if (plan.monthlyPrice === 0 && plan.billingUnit === 'custom') {
+      return false
+    }
+
+    return (
+      plan.monthlyPrice < currentPlan.monthlyPrice &&
+      plan.capabilityScore >= currentPlan.capabilityScore &&
+      plan.bestFor.includes(useCase)
+    )
+  })
+
+  return candidates.sort((left, right) => left.monthlyPrice - right.monthlyPrice)[0] ?? null
+}
