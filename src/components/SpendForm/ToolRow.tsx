@@ -20,6 +20,15 @@ export function ToolRow({ value, onChange, onRemove, canRemove, disabledToolIds 
   const currentTool = pricingData[value.toolId] ?? toolOptions[0]
   const currentPlan = currentTool.plans.find((plan) => plan.id === value.planId) ?? currentTool.plans[0]
 
+  const handleSeatsChange = (nextValue: string) => {
+    if (nextValue === '0') {
+      onChange({ ...value, seats: '1' })
+      return
+    }
+
+    onChange({ ...value, seats: nextValue })
+  }
+
   const planLabel = (() => {
     if (currentPlan.priceLabel) {
       return `${currentPlan.name} · ${currentPlan.priceLabel}`
@@ -147,7 +156,7 @@ export function ToolRow({ value, onChange, onRemove, canRemove, disabledToolIds 
                 inputMode="numeric"
                 placeholder="1"
                 value={value.seats}
-                onChange={(event) => onChange({ ...value, seats: event.target.value })}
+                onChange={(event) => handleSeatsChange(event.target.value)}
                 className="h-11"
               />
             </div>

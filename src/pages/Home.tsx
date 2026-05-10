@@ -1,8 +1,10 @@
 import { ArrowRight, BadgeCheck, LayoutGrid, TrendingDown, Sparkles } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { SpendForm } from '@/components/SpendForm/SpendForm'
+import { runAudit } from '@/engine/auditEngine'
 
 const features = [
   {
@@ -23,6 +25,8 @@ const features = [
 ]
 
 export function Home() {
+  const navigate = useNavigate()
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 antialiased">
       <div className="mx-auto max-w-7xl px-6 py-16 lg:py-24">
@@ -120,7 +124,13 @@ export function Home() {
 
             <CardContent className="p-0">
               <div className="w-full">
-                <SpendForm className="w-full bg-transparent border-0 shadow-none" />
+                <SpendForm
+                  className="w-full bg-transparent border-0 shadow-none"
+                  onSubmit={(formData) => {
+                    const auditResult = runAudit(formData)
+                    navigate('/results', { state: { auditResult } })
+                  }}
+                />
               </div>
             </CardContent>
           </div>

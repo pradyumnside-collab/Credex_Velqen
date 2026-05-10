@@ -42,12 +42,13 @@ const normalizeToolRow = (toolRow: Partial<SpendFormToolRow> | undefined, fallba
   const nextToolId = toolRow?.toolId && toolOptions.some((option) => option.id === toolRow.toolId) ? toolRow.toolId : fallbackTool.id
   const nextTool = pricingData[nextToolId]
   const nextPlanId = toolRow?.planId && nextTool.plans.some((plan) => plan.id === toolRow.planId) ? toolRow.planId : nextTool.defaultPlanId
+  const seatsValue = typeof toolRow?.seats === 'string' ? Number.parseInt(toolRow.seats, 10) : Number.NaN
 
   return {
     toolId: nextToolId,
     planId: nextPlanId,
     monthlySpend: typeof toolRow?.monthlySpend === 'string' ? toolRow.monthlySpend : '',
-    seats: typeof toolRow?.seats === 'string' ? toolRow.seats : '1',
+    seats: Number.isFinite(seatsValue) && seatsValue > 0 ? String(seatsValue) : '1',
   }
 }
 
