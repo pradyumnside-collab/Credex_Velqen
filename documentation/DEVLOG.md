@@ -22,3 +22,10 @@
 **What I learned:** When we are building an application that serves a wide variety of customers then we need to handle many different real world use cases and user requirements.
 **Blockers / what I'm stuck on:** I am still not convince with the logic and reccomendation rules which I am currently using. I still belive there are many more variables which need to be considered while producing the audit.
 **Plan for tomorrow:** Make the recomendation rule more optimized based on real world use case.
+
+## Day 5 — 2026-05-10
+**Hours worked:** 4
+**What I did:** I made the audit engine more accurate and optimized and also added test file for that.
+**What I learned:** I leaned for to make good testfile, we have to think of all possible testcase so we can catch as much error before production phase.
+**Blockers / what I'm stuck on:** I think current logic of audit is good, Now i am stuck on frontend design part. I am running late on schedule too.
+**Plan for tomorrow:** Enhance UI, AI integration and try to cover more feature if possible.
