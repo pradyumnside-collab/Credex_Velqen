@@ -817,7 +817,8 @@ export function detectCrossToolRedundancy(context: AuditContext) {
         }
       }
     }
-  } catch (e) {
+  } catch {
+    // Silently ignore consolidation option errors
   }
 
   return {
@@ -913,7 +914,8 @@ export function evaluateToolRecommendation(input: AuditToolInput, context: Audit
         return makeRecommendation(input, cross.plan, 'usage-check', 'Cheaper cross-vendor plan exists but may be lower capability; review tradeoffs.', caveat, 'tradeoff', ['cross-vendor-tradeoff'], cross.toolId)
       }
     }
-  } catch (e) {
+  } catch {
+    // Silently ignore cross-vendor candidate search errors
   }
 
   const plan = currentPlan(input.toolId, input.planId)
