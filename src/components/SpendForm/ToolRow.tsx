@@ -50,17 +50,17 @@ export function ToolRow({ value, onChange, onRemove, canRemove, disabledToolIds 
   })()
 
   return (
-    <Card className="overflow-hidden border-slate-200/80 bg-white/95 shadow-[0_10px_30px_rgba(15,23,42,0.08)]">
+    <Card className="tool-card overflow-hidden rounded-xl border border-zinc-100 bg-white shadow-card transition-shadow hover:shadow-card-lg">
       <CardContent className="p-0">
-        <div className="border-b border-slate-100 bg-slate-50/70 px-5 py-4 sm:px-6">
+        <div className="border-b border-zinc-100 bg-zinc-50/70 px-5 py-4 sm:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="space-y-1.5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">AI tool</p>
-              <h3 className="text-xl font-semibold text-slate-950">{currentTool.name}</h3>
-              <p className="text-sm text-slate-600">{planLabel}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">AI tool</p>
+              <h3 className="text-xl font-semibold text-zinc-900">{currentTool.name}</h3>
+              <p className="text-sm text-zinc-600">{planLabel}</p>
             </div>
 
-            <Button type="button" variant="ghost" size="sm" onClick={onRemove} disabled={!canRemove} className="self-start text-slate-500">
+            <Button type="button" variant="ghost" size="sm" onClick={onRemove} disabled={!canRemove} className="self-start text-zinc-500">
               <CircleMinus className="h-4 w-4" />
               Remove
             </Button>
@@ -69,8 +69,8 @@ export function ToolRow({ value, onChange, onRemove, canRemove, disabledToolIds 
 
         <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-[1.2fr_1fr_0.8fr_0.8fr]">
-            <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <Label htmlFor={`tool-${value.toolId}`} className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <div className="space-y-2 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+              <Label htmlFor={`tool-${value.toolId}`} className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
                 Tool
               </Label>
               <Select
@@ -94,8 +94,8 @@ export function ToolRow({ value, onChange, onRemove, canRemove, disabledToolIds 
               </Select>
             </div>
 
-            <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <Label htmlFor={`plan-${value.toolId}`} className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <div className="space-y-2 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+              <Label htmlFor={`plan-${value.toolId}`} className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
                 Plan
               </Label>
               <Select
@@ -127,8 +127,8 @@ export function ToolRow({ value, onChange, onRemove, canRemove, disabledToolIds 
               </Select>
             </div>
 
-            <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <Label htmlFor={`spend-${value.toolId}`} className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <div className="space-y-2 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+              <Label htmlFor={`spend-${value.toolId}`} className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
                 Monthly spend
               </Label>
               <Input
@@ -144,8 +144,8 @@ export function ToolRow({ value, onChange, onRemove, canRemove, disabledToolIds 
               />
             </div>
 
-            <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <Label htmlFor={`seats-${value.toolId}`} className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <div className="space-y-2 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+              <Label htmlFor={`seats-${value.toolId}`} className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
                 Seats
               </Label>
               <Input
@@ -162,9 +162,9 @@ export function ToolRow({ value, onChange, onRemove, canRemove, disabledToolIds 
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
             <span>Source: official pricing at {currentTool.sourceUrl.replace('https://', '')}</span>
-            <a className="inline-flex items-center gap-1 font-medium text-slate-950 hover:underline" href={currentTool.sourceUrl} target="_blank" rel="noreferrer">
+            <a className="inline-flex items-center gap-1 font-medium text-zinc-900 hover:underline" href={currentTool.sourceUrl} target="_blank" rel="noreferrer">
               View pricing
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
