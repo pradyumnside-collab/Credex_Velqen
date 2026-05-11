@@ -23,7 +23,7 @@ flowchart TB
     end
  
     subgraph Email["Email"]
-        RS["Resend\nTransactional Email\nAudit confirmation"]
+        EJS["EmailJS\nBrowser-side Email\nAudit confirmation"]
     end
  
     subgraph Infra["Infrastructure"]
@@ -40,7 +40,7 @@ flowchart TB
     FB -->|"fallback text"| UI
     UI -->|"INSERT audit row\nreturns slug"| AT
     UI -->|"INSERT lead row\naudit_id FK"| LT
-    UI -->|"POST /email\nwith audit summary"| RS
+    UI -->|"send() with EmailJS SDK\nwith audit summary"| EJS
     UI -->|"SELECT by slug\npublic read"| AT
     CI -->|"deploy on green"| VCL
     VCL -->|"serves static build"| Browser
@@ -99,7 +99,7 @@ flowchart TD
  
     Q["saveAudit → Supabase\nInserts anonymized data\nGenerates 8-char nanoid slug"]
     Q --> R["saveLead → Supabase\nEmail + optional fields\nLinked to audit via FK"]
-    R --> S["sendEmail → Resend\nAudit confirmation + savings summary\nCredex note if high-savings"]
+    R --> S["sendEmail → EmailJS\nAudit confirmation + savings summary\nCredex note if high-savings"]
     S --> T["Share URL revealed\n/audit/[slug]"]
  
     T --> U(["Public share page\nStrips email + company\nShows tools + savings"]):::user
@@ -117,7 +117,7 @@ flowchart TD
 | Language       | TypeScript                              |
 | Audit Engine   | Hardcoded TypeScript Rule-Based Logic   |
 | Database       | Supabase (PostgreSQL)                   |
-| Email Service  | Resend                                  |
+| Email Service  | EmailJS (@emailjs/browser)              |
 
 
 ## 4. Stack — Decisions & Justification
@@ -137,7 +137,20 @@ shadcn/ui is ARIA-compliant out of the box, which is the fastest path to Accessi
  
 Postgres gives a clean relational schema for audits ↔ leads. Row Level Security lets the share page read audits publicly while keeping lead emails private — no custom API layer needed. Free tier is sufficient for MVP.
  
-### Email: Resend
+### Email: EmailJS
  
-Three-line API. 100 emails/day free tier covers MVP. No domain verification friction during development.
- 
+EmailJS sends email from the browser. It works with `npm run dev`, so I do
+not need a server function or a verified domain just to test the app. I use
+my Gmail service in EmailJS, and the template variables must match exactly.
+
+## Abuse Protection
+
+**Choice: Honeypot field + browser-side submission throttling**
+
+**Honeypot:** An invisible `<input name="website" />` positioned off-screen with inline CSS. Real users never see it. Automated form fillers often do. If the field is populated, the submission is ignored client-side and never reaches Supabase.
+
+**Throttling:** Lead submissions are rate-limited in the browser to prevent accidental double submissions and light abuse. It is a UX guard, not a security boundary. Supabase RLS still protects the tables.
+
+**Why not hCaptcha:** The lead capture modal appears at the point of maximum intent. A visible challenge would add friction and reduce completion. The honeypot covers the low-effort bot case with no user-visible cost.
+
+**Email delivery:** Transactional email is sent from the browser through EmailJS. The public key is safe to expose, and the template fields must match the variables sent from `src/api/email.ts`.

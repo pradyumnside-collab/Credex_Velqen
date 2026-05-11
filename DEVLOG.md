@@ -29,3 +29,10 @@
 **What I learned:** I leaned for to make good testfile, we have to think of all possible testcase so we can catch as much error before production phase.
 **Blockers / what I'm stuck on:** I think current logic of audit is good, Now i am stuck on frontend design part. I am running late on schedule too.
 **Plan for tomorrow:** Enhance UI, AI integration and try to cover more feature if possible.
+
+## Day 6 — 2026-05-11
+**Hours worked:** 6
+**What I did:** Built the Supabase client layer, audit save/fetch helpers, the lead capture modal, a public share page, and the Vercel email function. Wired the results page to reveal a shareable audit URL after capture.
+**What I learned:** I learned that browser emails need the right template fields and env values. I switched to EmailJS because Resend needed a verified domain, which I do not have, and EmailJS works directly in Vite without a server function for testing.
+**Blockers / what I'm stuck on:** I was stuck on Resend for a long time, but I switched to EmailJS.
+**Plan for tomorrow:** Try to test my Application completly, add test files and make it ready for deployment.
