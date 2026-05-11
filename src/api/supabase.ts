@@ -1,17 +1,25 @@
 import type { AuditResult } from '@/engine/auditEngine'
 import { supabase } from '@/lib/supabaseClient'
 import { generateSlug } from '@/utils/generateSlug'
-import type { AuditInsert, AuditRow, LeadInsert } from '@/types/audit'
+import type { AuditRow, LeadInsert } from '@/types/audit'
 import { toPublicToolData } from '@/types/audit'
 
 export type SaveAuditResult =
-  | { success: true; slug: string; id: string }
+  | { success: true; slug: string }
   | { success: false; error: string }
+
+function formatSchemaMismatchError(missingColumns: string[]): string {
+  const joined = missingColumns.length > 0
+    ? missingColumns.join(', ')
+    : 'unknown columns'
+
+  return `Supabase schema mismatch for audits table. Missing columns: ${joined}. Run documentation/supabase-schema.sql in Supabase SQL Editor and confirm VITE_SUPABASE_URL points to that project.`
+}
 
 export async function saveAudit(result: AuditResult): Promise<SaveAuditResult> {
   const slug = generateSlug()
 
-  const row: AuditInsert = {
+  const row: Record<string, unknown> = {
     slug,
     team_size: result.teamSize,
     use_case: result.useCase,
@@ -24,23 +32,47 @@ export async function saveAudit(result: AuditResult): Promise<SaveAuditResult> {
     overlap_detected: result.flags.overlapDetected,
   }
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('audits')
     .insert(row)
-    .select('id, slug')
-    .single()
 
-  if (error || !data) {
-    console.error('[saveAudit] Supabase error:', error)
-    return { success: false, error: error?.message ?? 'Failed to save audit' }
+  if (!error) {
+    return { success: true, slug }
   }
 
-  return { success: true, slug: data.slug, id: data.id }
+  if (error.code === 'PGRST204') {
+    const missingColumnMatch = error.message.match(/Could not find the '([^']+)' column/i)
+    const missingColumn = missingColumnMatch?.[1]
+    const message = formatSchemaMismatchError(missingColumn ? [missingColumn] : [])
+    console.error('[saveAudit] Schema mismatch:', message)
+    return { success: false, error: message }
+  }
+
+  console.error('[saveAudit] Supabase error:', error)
+  return { success: false, error: error.message ?? 'Failed to save audit' }
 }
 
 export type GetAuditResult =
   | { success: true; audit: AuditRow }
   | { success: false; error: string; notFound?: boolean }
+
+function normalizeAuditRow(data: Partial<AuditRow> & Record<string, unknown>): AuditRow {
+  return {
+    id: String(data.id ?? ''),
+    slug: String(data.slug ?? ''),
+    team_size: Number(data.team_size ?? 1),
+    use_case: String(data.use_case ?? 'mixed'),
+    tools_data: Array.isArray(data.tools_data) ? (data.tools_data as AuditRow['tools_data']) : [],
+    total_monthly_savings: Number(data.total_monthly_savings ?? 0),
+    total_annual_savings: Number(data.total_annual_savings ?? 0),
+    high_savings: Boolean(data.high_savings ?? false),
+    already_optimal: Boolean(data.already_optimal ?? false),
+    redundancy_flagged: Boolean(data.redundancy_flagged ?? false),
+    overlap_detected: Boolean(data.overlap_detected ?? false),
+    generated_at: String(data.generated_at ?? data.created_at ?? new Date().toISOString()),
+    created_at: String(data.created_at ?? new Date().toISOString()),
+  }
+}
 
 export async function getAuditBySlug(slug: string): Promise<GetAuditResult> {
   const { data, error } = await supabase
@@ -54,7 +86,7 @@ export async function getAuditBySlug(slug: string): Promise<GetAuditResult> {
     return { success: false, error: error.message, notFound }
   }
 
-  return { success: true, audit: data as AuditRow }
+  return { success: true, audit: normalizeAuditRow(data as Partial<AuditRow> & Record<string, unknown>) }
 }
 
 export type SaveLeadResult =
