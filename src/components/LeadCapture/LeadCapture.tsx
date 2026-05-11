@@ -29,6 +29,7 @@ function getAppBaseUrl(): string {
 export function LeadCapture({ auditResult, onClose, onSuccess }: LeadCaptureProps) {
   const [step, setStep] = useState<Step>('form')
   const [error, setError] = useState<string | null>(null)
+  const [emailWarning, setEmailWarning] = useState<string | null>(null)
   const [slug, setSlug] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [honeypot, setHoneypot] = useState('')
@@ -55,15 +56,15 @@ export function LeadCapture({ auditResult, onClose, onSuccess }: LeadCaptureProp
 
     const auditSave = await saveAudit(auditResult)
     if (!auditSave.success) {
-      setError('Failed to save your audit. Please try again.')
+      setError(auditSave.error)
       setStep('form')
       return
     }
 
-    const { slug: newSlug, id: auditId } = auditSave
+    const { slug: newSlug } = auditSave
 
     const leadSave = await saveLead({
-      audit_id: auditId,
+      audit_id: null,
       audit_slug: newSlug,
       email: email.trim(),
       company: company.trim() || null,
@@ -82,7 +83,7 @@ export function LeadCapture({ auditResult, onClose, onSuccess }: LeadCaptureProp
     setStep('success')
     onSuccess(newSlug)
 
-    sendAuditConfirmation({
+    const emailResult = await sendAuditConfirmation({
       email: email.trim(),
       monthlyTotal: auditResult.totals.monthly,
       annualTotal: auditResult.totals.annual,
@@ -91,9 +92,12 @@ export function LeadCapture({ auditResult, onClose, onSuccess }: LeadCaptureProp
       teamSize: auditResult.teamSize,
       useCase: auditResult.useCase,
       toolCount: auditResult.tools.length,
-    }).catch((sendError) => {
-      console.warn('[LeadCapture] Email send failed (non-fatal):', sendError)
     })
+
+    if (!emailResult.success) {
+      setEmailWarning(`Audit saved, but confirmation email was not sent: ${emailResult.error}`)
+      console.warn('[LeadCapture] Email send failed (non-fatal):', emailResult.error)
+    }
   }
 
   async function copyLink() {
@@ -279,6 +283,12 @@ export function LeadCapture({ auditResult, onClose, onSuccess }: LeadCaptureProp
 
               {auditResult.flags.highSavings && (
                 <p className="mt-4 text-xs leading-relaxed text-zinc-400">Your savings qualify for a Credex consultation — a team member will reach out within 2 business days.</p>
+              )}
+
+              {emailWarning && (
+                <p className="mt-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-left text-xs text-amber-700">
+                  {emailWarning}
+                </p>
               )}
             </motion.div>
           )}
