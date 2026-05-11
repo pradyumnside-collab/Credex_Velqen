@@ -8,10 +8,12 @@ import { AuditSidebar } from '@/components/AuditResults/AuditSidebar'
 import { CredexCTA } from '@/components/AuditResults/CredexCTA'
 import { HeroSavings } from '@/components/AuditResults/HeroSavings'
 import { ToolBreakdown } from '@/components/AuditResults/ToolBreakdown'
+import { LeadCapture } from '@/components/LeadCapture/LeadCapture'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { generateSummary } from '@/api/anthropic'
 import type { AuditResult } from '@/engine/auditEngine'
+import { AnimatePresence } from 'framer-motion'
 
 const AUDIT_STORAGE_KEY = 'velqen_last_audit'
 
@@ -49,6 +51,14 @@ function initializeAuditResult(state: ResultsLocationState | null): AuditResult 
   }
 }
 
+function getAppBaseUrl(): string {
+  if (import.meta.env.VITE_APP_BASE_URL) {
+    return import.meta.env.VITE_APP_BASE_URL
+  }
+
+  return typeof window !== 'undefined' ? window.location.origin : ''
+}
+
 export function Results() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -56,6 +66,8 @@ export function Results() {
   const [auditResult] = useState<AuditResult | null>(() => initializeAuditResult(state))
   const [summary, setSummary] = useState<string | null>(null)
   const [notifyEmail, setNotifyEmail] = useState('')
+  const [showLeadCapture, setShowLeadCapture] = useState(false)
+  const [auditSlug, setAuditSlug] = useState<string | null>(null)
 
   // Derive loading state: we're loading if we have audit result but no summary yet
   const isAiLoading = auditResult !== null && summary === null
@@ -76,6 +88,11 @@ export function Results() {
       .catch(() => setSummary(''))  // Fallback or empty string to mark as loaded
   }, [auditResult])
 
+  function handleLeadSuccess(slug: string) {
+    setAuditSlug(slug)
+    setShowLeadCapture(false)
+  }
+
   if (!auditResult) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-6">
@@ -91,6 +108,7 @@ export function Results() {
 
   const status = deriveStatus(auditResult)
   const isLowSavings = auditResult.totals.monthly < 100
+  const shareUrl = auditSlug ? `${getAppBaseUrl()}/audit/${auditSlug}` : null
 
   return (
     <div className="min-h-screen bg-zinc-50">
@@ -122,6 +140,43 @@ export function Results() {
           <div className="space-y-6">
             <HeroSavings monthlyTotal={auditResult.totals.monthly} annualTotal={auditResult.totals.annual} status={status} />
 
+            {!auditSlug && (
+              <div className="rounded-xl border border-zinc-100 bg-white p-6 shadow-card">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="data-label mb-1 text-zinc-400">Save your audit</p>
+                    <h3 className="text-base font-semibold text-zinc-900">Get your full report and share link</h3>
+                    <p className="mt-1 text-sm text-zinc-500">Email the report to yourself and reveal a public share page with personal details removed.</p>
+                  </div>
+                  <Button
+                    onClick={() => setShowLeadCapture(true)}
+                    className="h-11 rounded-lg bg-zinc-900 text-sm font-medium text-white hover:bg-zinc-700"
+                  >
+                    Get my full report →
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {auditSlug && shareUrl && (
+              <div className="rounded-xl border border-velqen-100 bg-velqen-50 p-4 shadow-card">
+                <p className="mb-2 text-xs font-medium text-velqen-700">Report saved · Share link</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 truncate font-mono text-xs text-velqen-600">{shareUrl}</code>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 border-velqen-200 text-xs text-velqen-700"
+                    onClick={() => window.open(`/audit/${auditSlug}`, '_blank', 'noreferrer')}
+                  >
+                    Open share page
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <CredexCTA monthlySavings={auditResult.totals.monthly} annualSavings={auditResult.totals.annual} />
 
             <AISummary summary={summary} isLoading={isAiLoading} />
@@ -150,6 +205,16 @@ export function Results() {
           </div>
         </div>
       </main>
+
+      <AnimatePresence>
+        {showLeadCapture && auditResult && (
+          <LeadCapture
+            auditResult={auditResult}
+            onClose={() => setShowLeadCapture(false)}
+            onSuccess={handleLeadSuccess}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
