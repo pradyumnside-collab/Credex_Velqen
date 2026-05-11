@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Bell } from 'lucide-react'
@@ -31,43 +31,49 @@ function deriveStatus(result: AuditResult): 'savings' | 'optimal' | 'review' {
   return 'savings'
 }
 
+function initializeAuditResult(state: ResultsLocationState | null): AuditResult | null {
+  if (state?.auditResult) {
+    return state.auditResult
+  }
+
+  const stored = window.localStorage.getItem(AUDIT_STORAGE_KEY)
+  if (!stored) {
+    return null
+  }
+
+  try {
+    return JSON.parse(stored) as AuditResult
+  } catch {
+    window.localStorage.removeItem(AUDIT_STORAGE_KEY)
+    return null
+  }
+}
+
 export function Results() {
   const location = useLocation()
   const navigate = useNavigate()
   const state = location.state as ResultsLocationState | null
-  const [auditResult, setAuditResult] = useState<AuditResult | null>(state?.auditResult ?? null)
+  const [auditResult] = useState<AuditResult | null>(() => initializeAuditResult(state))
   const [summary, setSummary] = useState<string | null>(null)
-  const [aiLoading, setAiLoading] = useState(true)
   const [notifyEmail, setNotifyEmail] = useState('')
 
-  useEffect(() => {
-    if (state?.auditResult) {
-      setAuditResult(state.auditResult)
-      window.localStorage.setItem(AUDIT_STORAGE_KEY, JSON.stringify(state.auditResult))
-      return
-    }
-
-    const stored = window.localStorage.getItem(AUDIT_STORAGE_KEY)
-    if (!stored) {
-      return
-    }
-
-    try {
-      setAuditResult(JSON.parse(stored) as AuditResult)
-    } catch {
-      window.localStorage.removeItem(AUDIT_STORAGE_KEY)
-    }
-  }, [state?.auditResult])
+  // Derive loading state: we're loading if we have audit result but no summary yet
+  const isAiLoading = auditResult !== null && summary === null
 
   useEffect(() => {
+    if (auditResult) {
+      window.localStorage.setItem(AUDIT_STORAGE_KEY, JSON.stringify(auditResult))
+    }
+  }, [auditResult])
+
+  useLayoutEffect(() => {
     if (!auditResult) {
       return
     }
 
-    setAiLoading(true)
     generateSummary(auditResult)
       .then(setSummary)
-      .finally(() => setAiLoading(false))
+      .catch(() => setSummary(''))  // Fallback or empty string to mark as loaded
   }, [auditResult])
 
   if (!auditResult) {
@@ -118,7 +124,7 @@ export function Results() {
 
             <CredexCTA monthlySavings={auditResult.totals.monthly} annualSavings={auditResult.totals.annual} />
 
-            <AISummary summary={summary} isLoading={aiLoading} />
+            <AISummary summary={summary} isLoading={isAiLoading} />
 
             <ToolBreakdown recommendations={auditResult.tools} />
 
