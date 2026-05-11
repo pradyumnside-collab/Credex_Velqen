@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CheckCircle2, Copy, ExternalLink, Loader2, X } from 'lucide-react'
 
@@ -39,7 +39,7 @@ export function LeadCapture({ auditResult, onClose, onSuccess }: LeadCaptureProp
 
   const shareUrl = slug ? `${getAppBaseUrl()}/audit/${slug}` : null
 
-  async function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setError(null)
 

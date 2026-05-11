@@ -72,13 +72,12 @@ export default function Share() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const [audit, setAudit] = useState<AuditRow | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const invalidSlug = !slug
+  const [loading, setLoading] = useState(() => !invalidSlug ? true : false)
+  const [error, setError] = useState<string | null>(() => invalidSlug ? 'Invalid audit link.' : null)
 
   useEffect(() => {
-    if (!slug) {
-      setError('Invalid audit link.')
-      setLoading(false)
+    if (invalidSlug) {
       return
     }
 
@@ -107,7 +106,7 @@ export default function Share() {
         url: `${appUrl}/audit/${slug}`,
       })
     })
-  }, [slug])
+  }, [invalidSlug, slug])
 
   if (loading) {
     return (
