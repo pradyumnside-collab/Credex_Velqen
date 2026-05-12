@@ -36,3 +36,10 @@
 **What I learned:** I learned that browser emails need the right template fields and env values. I switched to EmailJS because Resend needed a verified domain, which I do not have, and EmailJS works directly in Vite without a server function for testing.
 **Blockers / what I'm stuck on:** I was stuck on Resend for a long time, but I switched to EmailJS.
 **Plan for tomorrow:** Try to test my Application completly, add test files and make it ready for deployment.
+
+## Day 7 — 2026-05-12
+**Hours worked:** 5
+**What I did:** Deployed the final website on vercel and added some Engineering files
+**What I learned:** I came across mutliple deployment time bug which i came across first time. Specifically, setting up a React SPA on Vercel caused a 404 routing error on sub-paths like `/audit`. I learned to fix this by adding a `vercel.json` file with a rewrite rule pointing `/(.*)` to `index.html`.
+**Blockers / what I'm stuck on:** Currently Stuck on writing Entrepreneurial files, I dont have much knowledge on Economics and I till now have not done user interviews.
+**Plan for tomorrow:** I will complete documentation file and submit the complete assignment Tommorow
