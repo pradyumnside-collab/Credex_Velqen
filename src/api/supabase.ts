@@ -8,14 +8,6 @@ export type SaveAuditResult =
   | { success: true; slug: string }
   | { success: false; error: string }
 
-function formatSchemaMismatchError(missingColumns: string[]): string {
-  const joined = missingColumns.length > 0
-    ? missingColumns.join(', ')
-    : 'unknown columns'
-
-  return `Supabase schema mismatch for audits table. Missing columns: ${joined}. Run documentation/supabase-schema.sql in Supabase SQL Editor and confirm VITE_SUPABASE_URL points to that project.`
-}
-
 export async function saveAudit(result: AuditResult): Promise<SaveAuditResult> {
   const slug = generateSlug()
 
@@ -38,14 +30,6 @@ export async function saveAudit(result: AuditResult): Promise<SaveAuditResult> {
 
   if (!error) {
     return { success: true, slug }
-  }
-
-  if (error.code === 'PGRST204') {
-    const missingColumnMatch = error.message.match(/Could not find the '([^']+)' column/i)
-    const missingColumn = missingColumnMatch?.[1]
-    const message = formatSchemaMismatchError(missingColumn ? [missingColumn] : [])
-    console.error('[saveAudit] Schema mismatch:', message)
-    return { success: false, error: message }
   }
 
   console.error('[saveAudit] Supabase error:', error)

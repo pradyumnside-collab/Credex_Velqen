@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Bell } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 
 import { AISummary } from '@/components/AuditResults/AISummary'
 import { AuditSidebar } from '@/components/AuditResults/AuditSidebar'
@@ -10,7 +10,6 @@ import { HeroSavings } from '@/components/AuditResults/HeroSavings'
 import { ToolBreakdown } from '@/components/AuditResults/ToolBreakdown'
 import { LeadCapture } from '@/components/LeadCapture/LeadCapture'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { generateSummary } from '@/api/anthropic'
 import type { AuditResult } from '@/engine/auditEngine'
 import { AnimatePresence } from 'framer-motion'
@@ -65,7 +64,6 @@ export function Results() {
   const state = location.state as ResultsLocationState | null
   const [auditResult] = useState<AuditResult | null>(() => initializeAuditResult(state))
   const [summary, setSummary] = useState<string | null>(null)
-  const [notifyEmail, setNotifyEmail] = useState('')
   const [showLeadCapture, setShowLeadCapture] = useState(false)
   const [auditSlug, setAuditSlug] = useState<string | null>(null)
 
@@ -107,7 +105,6 @@ export function Results() {
   }
 
   const status = deriveStatus(auditResult)
-  const isLowSavings = auditResult.totals.monthly < 100
   const shareUrl = auditSlug ? `${getAppBaseUrl()}/audit/${auditSlug}` : null
 
   return (
@@ -158,46 +155,12 @@ export function Results() {
               </div>
             )}
 
-            {auditSlug && shareUrl && (
-              <div className="rounded-xl border border-velqen-100 bg-velqen-50 p-4 shadow-card">
-                <p className="mb-2 text-xs font-medium text-velqen-700">Report saved · Share link</p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 truncate font-mono text-xs text-velqen-600">{shareUrl}</code>
-                </div>
-                <div className="mt-3 flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 border-velqen-200 text-xs text-velqen-700"
-                    onClick={() => window.open(`/audit/${auditSlug}`, '_blank', 'noreferrer')}
-                  >
-                    Open share page
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            <CredexCTA monthlySavings={auditResult.totals.monthly} annualSavings={auditResult.totals.annual} />
+            <CredexCTA annualSavings={auditResult.totals.annual} shareUrl={shareUrl} />
 
             <AISummary summary={summary} isLoading={isAiLoading} />
 
             <ToolBreakdown recommendations={auditResult.tools} />
 
-            {isLowSavings && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="rounded-xl border border-zinc-100 bg-white p-6 shadow-card">
-                <div className="mb-3 flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-zinc-400" />
-                  <h3 className="text-sm font-semibold text-zinc-900">Notify me when optimizations apply</h3>
-                </div>
-                <p className="mb-4 text-sm text-zinc-500">Your current stack looks well optimized. We will email you when pricing changes or better alternatives emerge for your tools.</p>
-                <div className="flex gap-2">
-                  <Input type="email" placeholder="you@company.com" value={notifyEmail} onChange={(event) => setNotifyEmail(event.target.value)} className="h-9 border-zinc-200 text-sm" />
-                  <Button size="sm" className="h-9 flex-shrink-0 bg-zinc-900 text-white hover:bg-zinc-700">
-                    Notify me
-                  </Button>
-                </div>
-              </motion.div>
-            )}
           </div>
 
           <div className="print:hidden">

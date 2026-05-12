@@ -94,11 +94,12 @@ export function ToolRow({ value, onChange, onRemove, canRemove, disabledToolIds 
               </Select>
             </div>
 
-            <div className="space-y-2 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <div className="space-y-2 rounded-2xl border border-zinc-200 bg-white p-4 py-7 shadow-sm">
               <Label htmlFor={`plan-${value.toolId}`} className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
                 Plan
               </Label>
               <Select
+                className='w-40'
                 id={`plan-${value.toolId}`}
                 value={value.planId}
                 onChange={(event) => onChange({ ...value, planId: event.target.value })}

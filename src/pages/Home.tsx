@@ -69,9 +69,6 @@ export function Home() {
             <Button size="lg" className="h-11 gap-2 rounded-lg bg-zinc-900 px-6 text-sm font-medium text-white shadow-card-lg hover:bg-zinc-700" onClick={() => navigate('/audit')}>
               Run a quick audit <ArrowRight className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="lg" className="h-11 rounded-lg border-zinc-200 px-6 text-sm font-medium text-zinc-700">
-              Request demo
-            </Button>
           </motion.div>
 
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 0.6 }} className="mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
