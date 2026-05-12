@@ -66,7 +66,8 @@ export async function getAuditBySlug(slug: string): Promise<GetAuditResult> {
     .single()
 
   if (error) {
-    const notFound = error.code === 'PGRST116'
+    const notFound = error.code === 'PGRST116' || error.code === 'PGRST301'
+    console.error('[getAuditBySlug] Error fetching audit:', { slug, errorCode: error.code, errorMessage: error.message })
     return { success: false, error: error.message, notFound }
   }
 
