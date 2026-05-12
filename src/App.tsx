@@ -9,9 +9,9 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/results" element={<Results />} />
       <Route path="/audit" element={<Audit />} />
       <Route path="/audit/:slug" element={<Share />} />
-      <Route path="/results" element={<Results />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

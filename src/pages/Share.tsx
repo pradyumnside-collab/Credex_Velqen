@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { AlertTriangle, ArrowRight, CheckCircle2, TrendingDown } from 'lucide-react'
 
@@ -117,6 +117,10 @@ export default function Share() {
         </main>
       </div>
     )
+  }
+
+  if (invalidSlug) {
+    return <Navigate to="/" replace />
   }
 
   if (error || !audit) {
