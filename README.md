@@ -2,6 +2,66 @@
 
 Velqen is a SaaS spend evaluation and recommendation Website designed for startups and mid-sized businesses. It allows teams to input their current software stack and team size outputting an instant audit that identifies redundancies, overspending, and better alternative tooling based on their specific use-case.
 
+## 1. Homepage
+
+<p align="center">
+  <img width="1727" alt="Velqen Homepage" src="https://github.com/user-attachments/assets/bceca2c5-e0d0-41dc-838f-20ddaccabc73" />
+</p>
+
+<p align="center">
+  <em>Analyze your spending on AI tools</em>
+</p>
+
+---
+
+## 2. Audit Page
+
+<p align="center">
+  <img width="1175" alt="Velqen Audit Page" src="https://github.com/user-attachments/assets/8c481306-ec5c-45d7-b93e-606ddcdea15d" />
+</p>
+
+<p align="center">
+  <em>Provide your current SaaS tools, subscriptions, and team size to generate a personalized spend audit.</em>
+</p>
+
+---
+
+## 3. Result Page
+
+<p align="center">
+  <img width="1271" alt="Velqen Result Page" src="https://github.com/user-attachments/assets/5dab7979-b6a4-41a6-9907-524b75a99d6c" />
+</p>
+
+<p align="center">
+  <em>View total spend, detect redundancies, and identify opportunities to optimize your budget.</em>
+</p>
+
+---
+
+## 4. AI Analysis & Recommendations
+
+<p align="center">
+  <img width="787" alt="Velqen AI Analysis" src="https://github.com/user-attachments/assets/d780c6e4-0936-4347-966e-be300ac91708" />
+</p>
+
+<p align="center">
+  <em>Receive intelligent recommendations.</em>
+</p>
+
+---
+
+## 5. ✉️ Instant Email Report
+
+### Automated Audit Summary Delivered Instantly
+
+<p align="center">
+  <img width="1636" alt="Velqen Email Report" src="https://github.com/user-attachments/assets/dde77df6-c50f-4c47-8506-5fa6660d22fd" />
+</p>
+
+<p align="center">
+  <em>Get a clean, shareable audit report directly in your inbox with Shareable Link.</em>
+</p>
+
 ## Quick Start
 
 ```bash
