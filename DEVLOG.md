@@ -43,3 +43,8 @@
 **What I learned:** I came across mutliple deployment time bug which i came across first time. Specifically, setting up a React SPA on Vercel caused a 404 routing error on sub-paths like `/audit`. I learned to fix this by adding a `vercel.json` file with a rewrite rule pointing `/(.*)` to `index.html`.
 **Blockers / what I'm stuck on:** Currently Stuck on writing Entrepreneurial files, I dont have much knowledge on Economics and I till now have not done user interviews.
 **Plan for tomorrow:** I will complete documentation file and submit the complete assignment Tommorow
+
+## Day 8 — 2026-05-13
+**Hours worked:** 1
+**What I did:** Completed all documentation files
+**What I learned:** I learned how to define a clear go-to-market strategy targeting engineering managers, calculate customer acquisition costs and lifetime value, and identify actionable North Star metrics. Capturing qualified emails from high-savings audits is far more valuable than raw traffic, proving strategy and unit economics are crucial for SaaS.
